@@ -1,5 +1,8 @@
 package ufrn.pd.server;
 
+import java.net.DatagramSocket;
+import java.net.InetAddress;
+
 public class UDPSocket extends SocketAdapter {
     private DatagramSocket socket;
 
@@ -14,13 +17,28 @@ public class UDPSocket extends SocketAdapter {
     @Override
     void createSocket(int port, InetAddress host) {
 
+
     }
 
     @Override
-    void send(int port, InetAddress host);
+    void send(int port, InetAddress host) {
+
+    }
 
     // Should be a blocking operation
     @Override
-    void receive();
+    void receive() {
+
+    }
+
+    @Override
+    void open() {
+
+    }
+
+    @Override
+    String getMessage() {
+        return "";
+    }
 
 }

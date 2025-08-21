@@ -12,6 +12,13 @@ public class Server {
 
     private String host = "localhost";
 
+    private int segmentSize = 1024;
+
+    /*
+    This object will interpret the message according to the app protocol used here
+     */
+    private MessageValidator messageValidator;
+
     public Server(SocketAdapter socketAdapter) {
         this.socketAdapter = socketAdapter;
     }
@@ -22,13 +29,14 @@ public class Server {
         this.host = host;
     }
 
-    // Use conf file (or main?)
-   public static void main(String[] args) {
-        try(Socket socket = socketAdapter.createSocket(port, host)) {
-
-        } catch {
+//    TODO: Multithreading
+    public void runServer() {
+        socketAdapter.open();
+        while (true) {
+            byte[] clientSegment = new byte[segmentSize];
+            socketAdapter.receive();
+            messageValidator.validateMessage()
 
         }
-   }
-
+    }
 }

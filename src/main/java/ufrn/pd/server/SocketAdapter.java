@@ -17,4 +17,8 @@ public abstract class SocketAdapter {
 
     // This should be a blocking operation
     abstract void receive();
+
+    abstract void open();
+
+    abstract String getMessage();
 }
