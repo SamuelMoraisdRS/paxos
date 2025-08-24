@@ -1,4 +1,9 @@
-package ufrn.pd.server
+package ufrn.pd.server;
+
+import ufrn.pd.service.Service;
+
+import java.util.concurrent.Executors;
+import java.util.concurrent.ExecutorService;
 
 /**
  * This class represents the server application for each of our system's components
@@ -6,37 +11,30 @@ package ufrn.pd.server
 public class Server {
 
     // Adapter object to represent the socket interface used in this project
-    SocketAdapter socketAdapter;
-
-    private int port = 3009;
-
-    private String host = "localhost";
-
-    private int segmentSize = 1024;
+    private final ServerSocketAdapter socket;
 
     /*
     This object will interpret the message according to the app protocol used here
      */
-    private MessageValidator messageValidator;
+    private ApplicationProtocol applicationProtocol;
 
-    public Server(SocketAdapter socketAdapter) {
-        this.socketAdapter = socketAdapter;
+    private Service service;
+
+    public Server(ServerSocketAdapter socket, Service service, ApplicationProtocol applicationProtocol) {
+        this.socket = socket;
+        this.service = service;
+        this.applicationProtocol = applicationProtocol;
     }
 
-    public Server(SocketAdapter socketAdapter, int port, String host) {
-        this.socketAdapter = socketAdapter;
-        this.port = port;
-        this.host = host;
-    }
-
-//    TODO: Multithreading
+//    Meant for UDP servers
     public void runServer() {
-        socketAdapter.open();
-        while (true) {
-            byte[] clientSegment = new byte[segmentSize];
-            socketAdapter.receive();
-            messageValidator.validateMessage()
-
+        try (socket) {
+            socket.open();
+            while (true) {
+                socket.handleConnection(applicationProtocol, service);
+            }
+        } catch (Exception e) {
+           e.printStackTrace();
         }
     }
 }
