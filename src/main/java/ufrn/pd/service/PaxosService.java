@@ -1,6 +1,5 @@
 package ufrn.pd.service;
 
-import java.util.HashMap;
 import java.util.concurrent.ConcurrentHashMap;
 
 public class PaxosService implements Service{

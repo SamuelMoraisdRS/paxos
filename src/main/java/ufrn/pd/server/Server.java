@@ -2,8 +2,6 @@ package ufrn.pd.server;
 
 import ufrn.pd.service.Service;
 
-import java.util.concurrent.Executors;
-import java.util.concurrent.ExecutorService;
 
 /**
  * This class represents the server application for each of our system's components
@@ -16,9 +14,9 @@ public class Server {
     /*
     This object will interpret the message according to the app protocol used here
      */
-    private ApplicationProtocol applicationProtocol;
+    private final ApplicationProtocol applicationProtocol;
 
-    private Service service;
+    private final Service service;
 
     public Server(ServerSocketAdapter socket, Service service, ApplicationProtocol applicationProtocol) {
         this.socket = socket;
@@ -26,7 +24,6 @@ public class Server {
         this.applicationProtocol = applicationProtocol;
     }
 
-//    Meant for UDP servers
     public void runServer() {
         try (socket) {
             socket.open();
