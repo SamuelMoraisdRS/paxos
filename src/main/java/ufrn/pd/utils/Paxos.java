@@ -1,43 +1,50 @@
 package ufrn.pd.utils;
 
-import com.sun.jdi.Value;
 import ufrn.pd.client.Client;
 import ufrn.pd.server.Server;
 
 import java.util.ArrayList;
 import java.util.List;
+
 import java.util.concurrent.*;
 
 public abstract class Paxos {
     // ID of this node
-    int nodeId;
-    int maxKnowPaxosRound; // The most recent paxos round seen by this node, this should be incremented wiht new proposals
+    private int nodeId;
 
-    PaxosPhase paxosPhase;
+    private int maxKnowPaxosRound; // The most recent paxos round seen by this node, this should be incremented wiht new proposals
+
+    private PaxosPhase paxosPhase;
     // Indicates the node's current generation
-    Generation currentGeneration;
+    private Generation currentGeneration;
     //    Used to determine if a majority quorum has been reached
     int currentQuorum = 0;
 
-    Server server;
+    private Server server;
+
     //   If a node has a majority quorum, it will unavoidebly lose that status in order for other node to
 //    gain majority
 
-    Value currentProposal;
+    String currentProposal;
 
     List<Acceptor> acceptors;
+    
+    private int quorum; // milliseconds
 
     private int TIMEOUT_PER_ACCEPTOR = 200; // milliseconds
+
     // This timeout breaks out of the method if a majority of acceptors have crashed
     private final int TOTAL_TIMEOUT = 3000; // milliseconds
 
     public Paxos(Server server, List<Acceptor> acceptors, int timeout) {
+        this.quorum = (int) (acceptors.size()/2) + 1;
         this.server = server;
         this.acceptors = acceptors;
         this.TIMEOUT_PER_ACCEPTOR = timeout;
     }
 
     public Paxos(Server server, List<Acceptor> acceptors) {
+        this.quorum = (int) (acceptors.size()/2) + 1;
         this.server = server;
         this.acceptors = acceptors;
     }
@@ -52,26 +59,36 @@ public abstract class Paxos {
 //     if the a quorum is reached, send the accept message to the acceptors. If not, try again with a higher generation
         Generation newGeneration = new Generation(++this.maxKnowPaxosRound, nodeId);
         try (ExecutorService executorService = Executors.newVirtualThreadPerTaskExecutor();) {
+
             CompletionService completionService = new ExecutorCompletionService<>(executorService);
+
             for (Acceptor acceptor : acceptors) {
                 completionService.submit(() -> prepare(acceptor.getHost(), acceptor.getPort(), newGeneration, operation));
             }
+
             List<PrepareResponse> responses = new ArrayList<>();
 
-            long totalTime = 0l;
             long startTime = System.currentTimeMillis();
-            while (totalTime < TOTAL_TIMEOUT && responses.size() < acceptors.size()) {
-                totalTime = System.currentTimeMillis() - startTime;
+            while (startTime - System.currentTimeMillis() < TOTAL_TIMEOUT && responses.size() < quorum) {
                 Future<PrepareResponse> responseFuture = completionService.poll(TIMEOUT_PER_ACCEPTOR, TimeUnit.MILLISECONDS);
-                if (response)
+                if (responseFuture != null) {
+                    // This is non blocking
+                  responses.add(responseFuture.get());
+                }
                 responses.add(completionService.poll().get());
             }
-//            operation = getMostRecentAcceptedValue(responses);
-//
-//            sendPrepare(acceptorsAddresses, newGeneration, operation);
-//
+           operation = getMostRecentAcceptedValue(responses);
+        } catch (ExecutionException e) {
+                System.err.println("Paxos - Proposer : Error retrieving the result of the execution : " + e.getMessage());
+        } catch (InterruptedException e) {
+            System.err.println("Paxos - Proposer : Executor thread has been interrupted : " + e.getMessage());
         }
 
+
+    }
+
+    private String getMostRecentAcceptedValue(List<PrepareResponse> responses) {
+        responses.stream().reduce()
 
     }
 
