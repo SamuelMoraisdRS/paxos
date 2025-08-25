@@ -10,16 +10,29 @@ import java.util.Optional;
  or reject message to the proposer.
   */
 public class Acceptor {
-    // This is the highest possible generation, the one assimilated when a prepare message is received and accepted
-    private  Optional<Generation> promissedGeneration = Optional.empty();
-    // This is the generation of the previous accepted value on the algorithm
-    private  Optional<Generation> acceptedGeneration = Optional.empty();
-    // The previously accepted value
-    private  Optional<String> acceptedValue= Optional.empty();
-    // The value that has been chosen
-    private  Optional<String> commitedValue= Optional.empty();
+    private String host;
 
-    public Acceptor(){}
+    private int port;
+
+    public String getHost() {
+        return host;
+    }
+
+    public int getPort() {
+        return port;
+    }
+
+    // This is the highest possible generation, the one assimilated when a prepare message is received and accepted
+    private Optional<Generation> promissedGeneration = Optional.empty();
+    // This is the generation of the previous accepted value on the algorithm
+    private Optional<Generation> acceptedGeneration = Optional.empty();
+    // The previously accepted value
+    private Optional<String> acceptedValue = Optional.empty();
+    // The value that has been chosen
+    private Optional<String> commitedValue = Optional.empty();
+
+    public Acceptor() {
+    }
 
 
 }

@@ -4,12 +4,12 @@ import com.sun.jdi.Value;
 import ufrn.pd.client.Client;
 import ufrn.pd.server.Server;
 
+import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
+import java.util.concurrent.*;
 
-public  abstract class Paxos {
-   // ID of this node
+public abstract class Paxos {
+    // ID of this node
     int nodeId;
     int maxKnowPaxosRound; // The most recent paxos round seen by this node, this should be incremented wiht new proposals
 
@@ -17,16 +17,30 @@ public  abstract class Paxos {
     // Indicates the node's current generation
     Generation currentGeneration;
     //    Used to determine if a majority quorum has been reached
-    int currentQuorum;
-    int numberOfParticipants;
+    int currentQuorum = 0;
+
     Server server;
     //   If a node has a majority quorum, it will unavoidebly lose that status in order for other node to
 //    gain majority
-    Client client;
 
     Value currentProposal;
 
-    int TIMEOUT;
+    List<Acceptor> acceptors;
+
+    private int TIMEOUT_PER_ACCEPTOR = 200; // milliseconds
+    // This timeout breaks out of the method if a majority of acceptors have crashed
+    private final int TOTAL_TIMEOUT = 3000; // milliseconds
+
+    public Paxos(Server server, List<Acceptor> acceptors, int timeout) {
+        this.server = server;
+        this.acceptors = acceptors;
+        this.TIMEOUT_PER_ACCEPTOR = timeout;
+    }
+
+    public Paxos(Server server, List<Acceptor> acceptors) {
+        this.server = server;
+        this.acceptors = acceptors;
+    }
 
     void runPaxos(int key, int requestId, String operation) {
         // perform new proposal
@@ -37,20 +51,32 @@ public  abstract class Paxos {
 //     If the value returned by one of the nodes comes from a later generation, resend the promise with the new value
 //     if the a quorum is reached, send the accept message to the acceptors. If not, try again with a higher generation
         Generation newGeneration = new Generation(++this.maxKnowPaxosRound, nodeId);
-        List<String> addresses = getAcceptorsAddresses();
-        ExecutorService executorService = Executors.newFixedThreadPool(addresses.size());
-        for (String acceptorAddress : addresses) {
-         // async
-         executorService.execute();
-         prepare(acceptorAddress, newGeneration, operation);
+        try (ExecutorService executorService = Executors.newVirtualThreadPerTaskExecutor();) {
+            CompletionService completionService = new ExecutorCompletionService<>(executorService);
+            for (Acceptor acceptor : acceptors) {
+                completionService.submit(() -> prepare(acceptor.getHost(), acceptor.getPort(), newGeneration, operation));
+            }
+            List<PrepareResponse> responses = new ArrayList<>();
+
+            long totalTime = 0l;
+            long startTime = System.currentTimeMillis();
+            while (totalTime < TOTAL_TIMEOUT && responses.size() < acceptors.size()) {
+                totalTime = System.currentTimeMillis() - startTime;
+                Future<PrepareResponse> responseFuture = completionService.poll(TIMEOUT_PER_ACCEPTOR, TimeUnit.MILLISECONDS);
+                if (response)
+                responses.add(completionService.poll().get());
+            }
+//            operation = getMostRecentAcceptedValue(responses);
+//
+//            sendPrepare(acceptorsAddresses, newGeneration, operation);
+//
         }
-        Thread.sleep(TIMEOUT);
-        sendPrepare(acceptorsAddresses, newGeneration, operation);
 
 
     }
+
     // Sends a 'prepare' message to an acceptor
-    abstract void prepare(String acceptorAddress, long generationNumber, long proposalNumber);
+    abstract PrepareResponse prepare(String acceptorHost, int acceptorPort, Generation generationNumber, String value);
 
     // Sends a 'promise' or 'reject' message to a proposer
     abstract void promise(long generationNumber, long proposalNumber, String proposalValue);
