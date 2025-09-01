@@ -1,37 +1,29 @@
 package ufrn.pd.client;
 
-import ufrn.pd.server.ApplicationProtocol;
+import ufrn.pd.service.Service;
 
 
 import java.io.*;
-import java.net.InetAddress;
 import java.net.Socket;
-import java.net.UnknownHostException;
 
 public class TCPClient implements Client {
-    private InetAddress remoteAddress;
-    private int remotePort;
-    private ApplicationProtocol applicationProtocol;
     private int connectionPoolSize = 1000;
 
-    public TCPClient(String remoteAddress, int remotePort, ApplicationProtocol applicationProtocol, int connectionPoolSize) {
-        try {
-            this.remoteAddress = InetAddress.getByName(remoteAddress);
-        } catch (UnknownHostException e) {
-            throw new RuntimeException(e);
-        }
-        this.remotePort = remotePort;
-        this.applicationProtocol = applicationProtocol;
+    public TCPClient() {
+    }
+
+    public TCPClient(int connectionPoolSize) {
         this.connectionPoolSize = connectionPoolSize;
     }
 
     @Override
-    public String send(String message) {
+    public  String sendAndReceive(String remoteAddress, int remotePort, String message, Service service) {
         try (Socket clientSocket = new Socket(remoteAddress, remotePort);) {
             try (PrintWriter out = new PrintWriter(clientSocket.getOutputStream(), true);
                  BufferedReader in = new BufferedReader(new java.io.InputStreamReader(clientSocket.getInputStream()));) {
                 out.println(message);
-                return in.readLine();
+                System.out.println(service.handle(message)) ;
+                return service.handle(message);
             } catch (IOException e) {
                 System.err.println("TCP Client - Error accessing socket streams: " + e.getMessage());
             }
@@ -39,6 +31,11 @@ public class TCPClient implements Client {
         } catch (IOException e) {
             System.err.println("TCP Client - Error binding socket: " + e.getMessage());
         }
+        return "";
+    }
+
+    @Override
+    public String sendAndReceive(String remoteAddress, int port, String message) {
         return "";
     }
 }

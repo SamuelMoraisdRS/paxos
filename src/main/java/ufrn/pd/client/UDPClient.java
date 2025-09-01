@@ -1,36 +1,41 @@
 package ufrn.pd.client;
 
-import ufrn.pd.server.ApplicationProtocol;
+import ufrn.pd.service.Service;
 
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.net.InetAddress;
-import java.net.UnknownHostException;
 
 public class UDPClient implements Client {
-    private InetAddress remoteAddress;
-    private int remotePort;
-    private ApplicationProtocol applicationProtocol;
     private int segmentSize = 1024;
 
-    public UDPClient(String remoteAddress, int remotePort, ApplicationProtocol applicationProtocol) {
-        try {
-            this.remoteAddress = InetAddress.getByName(remoteAddress);
-        } catch (UnknownHostException e) {
-            throw new RuntimeException(e);
-        }
-        this.remotePort = remotePort;
-        this.applicationProtocol = applicationProtocol;
+    public UDPClient() {
+    }
+
+    public UDPClient( int segmentSize) {
+        this.segmentSize = segmentSize;
     }
 
     @Override
-    public String send(String message) {
+    public String sendAndReceive(String remoteAddress, int remotePort, String message, Service service) {
         String reply = null;
         try (DatagramSocket clientSocket = new DatagramSocket();) {
-            DatagramPacket packet = new DatagramPacket(message.getBytes(), message.length(), remoteAddress, remotePort);
-            if (!applicationProtocol.validateRequest(message)) {
-                throw new IllegalArgumentException("The Request does not match the application protocol");
-            }
+            DatagramPacket packet = new DatagramPacket(message.getBytes(), message.length(), InetAddress.getByName(remoteAddress), remotePort);
+            clientSocket.send(packet);
+            DatagramPacket replyPacket = new DatagramPacket(new byte[1024], 1024);
+            clientSocket.receive(replyPacket);
+            return new String(replyPacket.getData());
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return null;
+    }
+
+    @Override
+    public String sendAndReceive(String remoteAddress, int port, String message) {
+        String reply = null;
+        try (DatagramSocket clientSocket = new DatagramSocket();) {
+            DatagramPacket packet = new DatagramPacket(message.getBytes(), message.length(), InetAddress.getByName(remoteAddress), port);
             clientSocket.send(packet);
             DatagramPacket replyPacket = new DatagramPacket(new byte[1024], 1024);
             clientSocket.receive(replyPacket);

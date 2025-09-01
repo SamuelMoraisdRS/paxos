@@ -6,7 +6,7 @@ import ufrn.pd.service.Service;
  */
 public interface ServerSocketAdapter extends AutoCloseable {
 
-     void handleConnection(ApplicationProtocol appProtocol,  Service service);
+     void handleConnection(Service service);
 
      void open();
 

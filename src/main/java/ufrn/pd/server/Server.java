@@ -14,24 +14,32 @@ public class Server {
     /*
     This object will interpret the message according to the app protocol used here
      */
-    private final ApplicationProtocol applicationProtocol;
 
     private final Service service;
 
-    public Server(ServerSocketAdapter socket, Service service, ApplicationProtocol applicationProtocol) {
+    public Server(ServerSocketAdapter socket, Service service) {
         this.socket = socket;
         this.service = service;
-        this.applicationProtocol = applicationProtocol;
     }
 
     public void runServer() {
         try (socket) {
             socket.open();
             while (true) {
-                socket.handleConnection(applicationProtocol, service);
+                socket.handleConnection(service);
             }
         } catch (Exception e) {
            e.printStackTrace();
+        }
+    }
+    public void runServer(Service service) {
+        try (socket) {
+            socket.open();
+            while (true) {
+                socket.handleConnection(service);
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
         }
     }
 }

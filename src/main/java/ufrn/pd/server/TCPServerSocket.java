@@ -11,7 +11,7 @@ import java.net.Socket;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
-public class TCPServerSocket implements ServerSocketAdapter{
+public class TCPServerSocket implements ServerSocketAdapter {
 
     ServerSocket serverSocket;
     ExecutorService executorService;
@@ -24,29 +24,31 @@ public class TCPServerSocket implements ServerSocketAdapter{
         this.connectionPoolSize = connectionPoolSize;
     }
 
-    protected void processRequest(Service service, ApplicationProtocol appProtocol, Socket socket) {
-        try(PrintWriter socketWriter = new PrintWriter(socket.getOutputStream(), true);
-                BufferedReader socketReader = new BufferedReader(new java.io.InputStreamReader(socket.getInputStream()))){
-               String message = socketReader.readLine();
-               if (!appProtocol.validateRequest(message)) {
-                   throw new IllegalArgumentException("The Request does not match the application protocol");
-               }
-               String reply = service.handle(message);
-                String replyMessage = appProtocol.formatResponse(reply);
-               // Send the reply
-               socketWriter.println(replyMessage);
-            } catch (IOException e) {
-                System.err.println("TCP Server - Error acessing socket streams: " + e.getMessage());
-            }
+    protected void processRequest(Service service, Socket socket) {
+        try (PrintWriter socketWriter = new PrintWriter(socket.getOutputStream(), true);
+             BufferedReader socketReader = new BufferedReader(new java.io.InputStreamReader(socket.getInputStream()))) {
+            String message = socketReader.readLine();
+            System.out.println("Recebido: " + message);
+//            if (!appProtocol.validateRequest(message)) {
+//                throw new IllegalArgumentException("The Request does not match the application protocol");
+//            }
+            String reply = service.handle(message);
+            System.out.println("Enviado: " + reply);
+//                Send the reply
+            socketWriter.println(reply);
+        } catch (IOException e) {
+            System.err.println("TCP Server - Error acessing socket streams: " + e.getMessage());
+        }
     }
+
     @Override
-    public void handleConnection( ApplicationProtocol appProtocol, Service service) {
-            try {
-                Socket socket = serverSocket.accept();
-                this.executorService.execute(() -> processRequest(service, appProtocol, socket));
-            } catch (IOException e) {
-                System.err.println(" TCP Server - Error stablishing client connection: " + e.getMessage());
-            }
+    public void handleConnection(Service service) {
+        try {
+            Socket socket = serverSocket.accept();
+            this.executorService.execute(() -> processRequest(service, socket));
+        } catch (IOException e) {
+            System.err.println(" TCP Server - Error stablishing client connection: " + e.getMessage());
+        }
 
     }
 
