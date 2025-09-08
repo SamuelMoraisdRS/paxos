@@ -1,6 +1,7 @@
 package ufrn.pd.server;
 
 import ufrn.pd.service.Service;
+import ufrn.pd.utils.protocol.ApplicationProtocol;
 
 
 /**
@@ -15,28 +16,43 @@ public class Server {
     This object will interpret the message according to the app protocol used here
      */
 
-    private final Service service;
+    private Service service;
+    private ApplicationProtocol protocol;
 
-    public Server(ServerSocketAdapter socket, Service service) {
+    public Server(ServerSocketAdapter socket, ApplicationProtocol protocol) {
         this.socket = socket;
-        this.service = service;
+        this.protocol = protocol;
+    }
+
+    public Server(ServerSocketAdapter socket) {
+        this.socket = socket;
     }
 
     public void runServer() {
         try (socket) {
             socket.open();
             while (true) {
-                socket.handleConnection(service);
+                socket.handleConnection(service, protocol);
             }
         } catch (Exception e) {
            e.printStackTrace();
+        }
+    }
+    public void runServer(Service service, ApplicationProtocol protocol) {
+        try (socket) {
+            socket.open();
+            while (true) {
+                socket.handleConnection(service, protocol);
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
         }
     }
     public void runServer(Service service) {
         try (socket) {
             socket.open();
             while (true) {
-                socket.handleConnection(service);
+                socket.handleConnection(service, protocol);
             }
         } catch (Exception e) {
             e.printStackTrace();
