@@ -1,10 +1,13 @@
 package ufrn.pd.server;
 
 import ufrn.pd.service.Service;
+import ufrn.pd.service.user.dtos.RequestPayload;
+import ufrn.pd.utils.protocol.ApplicationProtocol;
 
 import java.io.IOException;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
+import java.util.Optional;
 
 public class UDPServerSocket implements ServerSocketAdapter {
 
@@ -19,11 +22,17 @@ public class UDPServerSocket implements ServerSocketAdapter {
     }
 
     @Override
-    public void handleConnection(Service service) {
+    public void handleConnection(Service service, ApplicationProtocol protocol) {
         DatagramPacket packet = new DatagramPacket(new byte [segmentSize], segmentSize);
         try {
             socket.receive(packet);
-            String reply = service.handle(new String(packet.getData()));
+            // TODO : Receber via codec
+            RequestPayload message = protocol.parse(new String(packet.getData()));
+            Optional<RequestPayload> responsePayload = Optional.ofNullable(service.handle(message));
+            if (responsePayload.isEmpty()) {
+                return;
+            }
+            String reply = protocol.createMessage(responsePayload.get());
             System.out.println("Recebido: " + reply);
             DatagramPacket replyPacket = new DatagramPacket(reply.getBytes(), reply.length(), packet.getAddress(), packet.getPort());
             socket.send(replyPacket);
