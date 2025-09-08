@@ -1,48 +1,42 @@
 package ufrn.pd.client;
 
 import ufrn.pd.service.Service;
+import ufrn.pd.service.user.dtos.RequestPayload;
+import ufrn.pd.utils.protocol.ApplicationProtocol;
 
+import java.io.IOException;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.net.InetAddress;
 
 public class UDPClient implements Client {
     private int segmentSize = 1024;
+    private final ApplicationProtocol protocol;
 
-    public UDPClient() {
+    public UDPClient(ApplicationProtocol protocol) {
+        this.protocol = protocol;
     }
 
-    public UDPClient( int segmentSize) {
+    public UDPClient(int segmentSize, ApplicationProtocol protocol) {
         this.segmentSize = segmentSize;
+        this.protocol = protocol;
     }
 
     @Override
-    public String sendAndReceive(String remoteAddress, int remotePort, String message, Service service) {
+    public RequestPayload sendAndReceive(String remoteAddress, int port, RequestPayload messagePayload) {
         String reply = null;
         try (DatagramSocket clientSocket = new DatagramSocket();) {
-            DatagramPacket packet = new DatagramPacket(message.getBytes(), message.length(), InetAddress.getByName(remoteAddress), remotePort);
+            String message = protocol.createMessage(messagePayload);
+            DatagramPacket packet = new DatagramPacket(message.getBytes(), message.length(), InetAddress.getByName(remoteAddress), port);
             clientSocket.send(packet);
             DatagramPacket replyPacket = new DatagramPacket(new byte[1024], 1024);
+            // Unike the TCP Conection, we receive the message as a single packet
             clientSocket.receive(replyPacket);
-            return new String(replyPacket.getData());
+            String response = new String(replyPacket.getData());
+            return protocol.parse(response);
         } catch (Exception e) {
             e.printStackTrace();
         }
         return null;
-    }
-
-    @Override
-    public String sendAndReceive(String remoteAddress, int port, String message) {
-        String reply = null;
-        try (DatagramSocket clientSocket = new DatagramSocket();) {
-            DatagramPacket packet = new DatagramPacket(message.getBytes(), message.length(), InetAddress.getByName(remoteAddress), port);
-            clientSocket.send(packet);
-            DatagramPacket replyPacket = new DatagramPacket(new byte[1024], 1024);
-            clientSocket.receive(replyPacket);
-            return new String(replyPacket.getData());
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-        return reply;
     }
 }

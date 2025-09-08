@@ -1,29 +1,54 @@
 package ufrn.pd.client;
 
 import ufrn.pd.service.Service;
+import ufrn.pd.service.user.dtos.RequestPayload;
+import ufrn.pd.utils.protocol.ApplicationProtocol;
 
 
 import java.io.*;
 import java.net.Socket;
+import java.util.Optional;
 
-public class TCPClient implements Client {
+public class TCPClient implements Client, AutoCloseable {
     private int connectionPoolSize = 1000;
+    private Socket clientSocket;
+    private BufferedReader socketReader;
+    private PrintWriter socketWriter;
+    private final ApplicationProtocol protocol;
 
-    public TCPClient() {
+    public TCPClient(ApplicationProtocol protocol) {
+        this.protocol = protocol;
     }
 
-    public TCPClient(int connectionPoolSize) {
+    public TCPClient(int connectionPoolSize, ApplicationProtocol protocol) {
         this.connectionPoolSize = connectionPoolSize;
+        this.protocol = protocol;
     }
 
+
+    public void open(String remoteAddress, int remotePort, String message) throws IOException {
+        this.clientSocket = new Socket(remoteAddress, remotePort);
+        this.socketReader = new BufferedReader(new java.io.InputStreamReader(clientSocket.getInputStream()));
+        this.socketWriter = new PrintWriter(clientSocket.getOutputStream(), true);
+    }
+
+    // TODO : Examine the systems fault tolerance
     @Override
-    public  String sendAndReceive(String remoteAddress, int remotePort, String message, Service service) {
+    public RequestPayload sendAndReceive(String remoteAddress, int remotePort, RequestPayload messagePayload) {
         try (Socket clientSocket = new Socket(remoteAddress, remotePort);) {
-            try (PrintWriter out = new PrintWriter(clientSocket.getOutputStream(), true);
+            try (PrintWriter out = new PrintWriter(clientSocket.getOutputStream());
                  BufferedReader in = new BufferedReader(new java.io.InputStreamReader(clientSocket.getInputStream()));) {
-                out.println(message);
-                System.out.println(service.handle(message)) ;
-                return service.handle(message);
+                String message = protocol.createMessage(messagePayload);
+                out.print(message);
+                out.flush();
+                // TODO : Encapsulate this on a codec class
+                StringBuilder response_buffer = new StringBuilder();
+                for (int i = 0; i < 6; i++) {
+                    response_buffer.append(in.readLine() + "\n");
+                }
+//                Stub
+                String response = response_buffer.toString();
+                return protocol.parse(response);
             } catch (IOException e) {
                 System.err.println("TCP Client - Error accessing socket streams: " + e.getMessage());
             }
@@ -31,11 +56,13 @@ public class TCPClient implements Client {
         } catch (IOException e) {
             System.err.println("TCP Client - Error binding socket: " + e.getMessage());
         }
-        return "";
+        return null;
     }
 
     @Override
-    public String sendAndReceive(String remoteAddress, int port, String message) {
-        return "";
+    public void close() throws Exception {
+        clientSocket.close();
+        socketReader.close();
+        socketWriter.close();
     }
 }
