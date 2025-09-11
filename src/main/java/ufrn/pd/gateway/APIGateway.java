@@ -1,13 +1,11 @@
 package ufrn.pd.gateway;
 
 import ufrn.pd.client.Client;
-import ufrn.pd.client.TCPClient;
-import ufrn.pd.client.UDPClient;
 import ufrn.pd.server.Server;
-import ufrn.pd.server.TCPServerSocket;
-import ufrn.pd.server.UDPServerSocket;
 import ufrn.pd.service.Service;
-import ufrn.pd.service.user.dtos.RequestPayload;
+import ufrn.pd.service.user.RequestPayload;
+import ufrn.pd.service.user.ResponsePayload;
+import ufrn.pd.service.user.protocol.ResponseStatus;
 
 import java.util.*;
 import java.util.concurrent.*;
@@ -22,8 +20,10 @@ public class APIGateway implements Service {
 
     // Table of addresses to the nodes managed by this gateway
     private final Map<NodeAddress, NodeRole> addressTable = new ConcurrentHashMap<>();
+
     private final Map<NodeAddress, NodeStatus> userNodes = new ConcurrentHashMap<>();
     private final Map<NodeAddress, NodeStatus> bookingNodes = new ConcurrentHashMap<>();
+
     // Network client instace, for starting communications
     private final Client client;
     private final Server server;
@@ -48,32 +48,30 @@ public class APIGateway implements Service {
     private final Runnable heartbeatWorker = new Runnable() {
         @Override
         public void run() {
-            System.out.println("Entrou no heartbeatworker");
             List<NodeAddress> addresses = new ArrayList<>();
             try (ExecutorService executorService = Executors.newVirtualThreadPerTaskExecutor()) {
                 for (NodeAddress address : addressTable.keySet()) {
+                    NodeStatus nodeStatus = NodeStatus.ALIVE;
                     Future<NodeAddress> future = executorService.submit(() -> sendHeartbeat(address, addressTable.get(address)));
                     try {
                         addresses.add(future.get(400, TimeUnit.MILLISECONDS));
                     } catch (TimeoutException e) {
-                        System.out.println("⏱ Node " + address + " TIMEOUT - marcado como DEAD");
                         future.cancel(true);
+                        nodeStatus = NodeStatus.DEAD;
                     } catch (Exception e) {
-                        System.err.println("Erro no heartbeat para " + address + ": " + e.getMessage());
+                        e.printStackTrace();
+                        nodeStatus = NodeStatus.DEAD;
                     }
+                    System.out.println("Node " + address + " marcado como " + nodeStatus);
+                    updateNodeStatus(address, addressTable.get(address), nodeStatus);
                 }
-                addresses.forEach(address -> {
-                    // TODO : Replace with logging
-                    System.out.println("Node " + address + " marcado como ALIVE");
-                    addLivingNode(address, addressTable.get(address));
-                });
             }
         }
     };
 
     // TODO : Erros na formatacao da mensagem serao tratadas na camada protocol
     @Override
-    public RequestPayload handle(RequestPayload payload) {
+    public ResponsePayload handle(RequestPayload payload) {
 //        Non functional requests
         if (Objects.equals(payload.operation(), "REGISTER")) {
             NodeAddress senderAddress = NodeAddress.fromString(payload.value());
@@ -81,12 +79,13 @@ public class APIGateway implements Service {
         }
         // TODO : How to check if a service request is indeed a part of the addressTable
         if (!addressTable.containsKey(payload.destinationAddress())) {
-            return new RequestPayload(null, null, null, "ERROR", "");
+            // TODO : Response
+            return new ResponsePayload(ResponseStatus.FORBIDDEN, "Unknown service client", gatewayAddress);
         }
         return handleServiceRequest(payload);
     }
 
-    private void addLivingNode(NodeAddress nodeAddress, NodeRole nodeRole) {
+    private void updateNodeStatus(NodeAddress nodeAddress, NodeRole nodeRole, NodeStatus newStatus) {
         Map<NodeAddress, NodeStatus> nodeMap = switch (nodeRole) {
             case NodeRole.USER -> userNodes;
             case NodeRole.BOOKING -> bookingNodes;
@@ -95,7 +94,7 @@ public class APIGateway implements Service {
         if (nodeMap == null) {
             return;
         }
-        nodeMap.put(nodeAddress, NodeStatus.ALIVE);
+        nodeMap.put(nodeAddress, newStatus);
     }
 
     private Optional<NodeAddress> getLivingNode(NodeRole nodeService) {
@@ -112,15 +111,13 @@ public class APIGateway implements Service {
                 .findFirst().map(Map.Entry::getKey);
     }
 
-    // ! : Blocking
-    private RequestPayload handleServiceRequest(RequestPayload payload) {
+    private ResponsePayload handleServiceRequest(RequestPayload payload) {
         NodeRole service = payload.destinationRole();
         int numOfAttempts = 5;
         for (int i = 0; i < numOfAttempts; i++) {
             // Finds an available node for the requested service
             Optional<NodeAddress> address = getLivingNode(service);
             if (address.isEmpty()) {
-                // Sleep for a time period and then try again
                 // TODO : Not Ideal
                 try {
                     Thread.sleep(50);
@@ -132,9 +129,8 @@ public class APIGateway implements Service {
             NodeAddress chosenNodeAddress = address.get();
             RequestPayload messageToService = new RequestPayload(chosenNodeAddress, service, NodeRole.GATEWAY, payload.operation(), payload.value());
             // Creates a connection to the service node, sends the appropriate request to it and captures the response
-            RequestPayload serviceResponse = client.sendAndReceive(chosenNodeAddress.ip(), chosenNodeAddress.port(), messageToService);
-            // TODO : We cant access the clients address on this layer
-            return new RequestPayload(gatewayAddress, service, NodeRole.CLIENT, serviceResponse.operation(), serviceResponse.value());
+            ResponsePayload serviceResponse = client.sendAndReceive(chosenNodeAddress.ip(), chosenNodeAddress.port(), messageToService);
+            return new ResponsePayload(serviceResponse.status(), serviceResponse.value(), gatewayAddress);
         }
 //        return "ERROR - No available nodes"; // TODO: Replace with a protocol method (return 500 or 312 for http)
         return null; // TODO: Replace with a protocol method (return 500 or 312 for http)
@@ -143,18 +139,22 @@ public class APIGateway implements Service {
 
     // TODO : When the protocol goes to the server, this method wont exist anymore
     private NodeAddress sendHeartbeat(NodeAddress address, NodeRole serviceRole) {
-            var heartbeat = new RequestPayload(address, NodeRole.GATEWAY, serviceRole,
-                    "HEARTBEAT", "null");
-            var response = client.sendAndReceive(address.ip(), address.port(), heartbeat);
-            return NodeAddress.fromString(response.value());
+        var heartbeat = new RequestPayload(address, NodeRole.GATEWAY, serviceRole,
+                "HEARTBEAT", "pending");
+        ResponsePayload response = client.sendAndReceive(address.ip(), address.port(), heartbeat);
+        if (response.status() == ResponseStatus.OK) {
+            return address;
+        }
+        return null;
     }
 
     // 1 - No ja registrado manda mensagem
-    private RequestPayload registerNewNode(NodeAddress nodeAddress, NodeRole nodeRole) {
+    private ResponsePayload registerNewNode(NodeAddress nodeAddress, NodeRole nodeRole) {
         addressTable.put(nodeAddress, nodeRole);
-        addLivingNode(nodeAddress, nodeRole);
+        updateNodeStatus(nodeAddress, nodeRole, NodeStatus.ALIVE);
         System.out.printf("SUCCESS - Node (%s) registered%n", nodeAddress);
-        return new RequestPayload(nodeAddress, NodeRole.GATEWAY, nodeRole, "END", null);
+        // TODO : response
+        return new ResponsePayload(ResponseStatus.OK, "success", gatewayAddress);
     }
 
     // Should be in try with resources clause
@@ -173,12 +173,5 @@ public class APIGateway implements Service {
     public void shutdownHeartbeatWorker() {
         System.out.println("Shutdown heartbeat worker");
         heartBeatExecutorService.shutdown();
-    }
-
-    public static void main(String[] args) {
-        NodeAddress gatewayAddress = new NodeAddress("localhost", 3001);
-        APIGateway apiGateway = new APIGateway(new UDPClient(new PDGatewayProtocol()),
-                new Server(new UDPServerSocket(gatewayAddress.port(), 1024), new PDGatewayProtocol()), gatewayAddress);
-        apiGateway.run();
     }
 }
