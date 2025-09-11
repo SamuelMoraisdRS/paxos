@@ -4,24 +4,23 @@ package ufrn.pd.utils.protocol;
 
 import ufrn.pd.gateway.NodeAddress;
 import ufrn.pd.gateway.NodeRole;
-import ufrn.pd.service.user.dtos.RequestPayload;
+import ufrn.pd.service.user.RequestPayload;
+import ufrn.pd.service.user.ResponsePayload;
+import ufrn.pd.service.user.protocol.ResponseStatus;
 
-import java.io.IOException;
 import java.util.List;
-import java.util.Objects;
 import java.util.Optional;
-import java.util.StringTokenizer;
 
 public abstract class PDProtocol implements ApplicationProtocol {
 
-    abstract public Optional<RequestPayload> validateMessage(List<String> msg);
+//    abstract public Optional<RequestPayload> validateMessage(List<String> msg);
 
 //    abstract RequestPayload createErrorMessage(List<String> msg);
     @Override
-    public  RequestPayload parse(String message) {
+    public  RequestPayload parseRequest(String message) {
         List<String> msg = List.of(message.split("\n"));
         // TODO : Split the validation and error payload creation
-        Optional<RequestPayload> errorPayload = validateMessage(msg);
+        Optional<RequestPayload> errorPayload = validateMessage(message);
         if  (errorPayload.isPresent()) {
             return errorPayload.get();
         }
@@ -34,10 +33,28 @@ public abstract class PDProtocol implements ApplicationProtocol {
         return new RequestPayload(destinationAddress, senderRole, destinationRole, operation, msg.get(4));
     }
 
+    @Override
+    public  ResponsePayload parseResponse(String message) {
+        List<String> msg = List.of(message.split("\n"));
+        ResponseStatus status = null;
+        try {
+            status = ResponseStatus.valueOf(msg.get(0));
+        } catch (IllegalArgumentException e) {
+            return new ResponsePayload(ResponseStatus.ERROR, "The received operation is status is not valid", null);
+        }
+        NodeAddress senderAddressLine = NodeAddress.fromString(msg.get(1));
+        return new ResponsePayload(status, msg.get(2), senderAddressLine);
+    }
 
     @Override
-    public String createMessage(RequestPayload message) {
+    public String createRequest(RequestPayload message) {
         return String.format("%s%n%s%n%s%n%s%n%s%n",message.operation(),
                 message.destinationAddress(), message.senderRole(), message.destinationRole(), message.value());
+    }
+
+    @Override
+    public String createResponse(ResponsePayload message) {
+        return String.format("%s%n%s%n%s%n",message.status().toString(),
+                message.senderAddress(), message.value());
     }
 }
