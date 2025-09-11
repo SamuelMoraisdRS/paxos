@@ -1,10 +1,9 @@
 package ufrn.pd.client;
 
-import ufrn.pd.service.Service;
-import ufrn.pd.service.user.dtos.RequestPayload;
+import ufrn.pd.service.user.RequestPayload;
+import ufrn.pd.service.user.ResponsePayload;
 import ufrn.pd.utils.protocol.ApplicationProtocol;
 
-import java.io.IOException;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.net.InetAddress;
@@ -23,17 +22,17 @@ public class UDPClient implements Client {
     }
 
     @Override
-    public RequestPayload sendAndReceive(String remoteAddress, int port, RequestPayload messagePayload) {
+    public ResponsePayload sendAndReceive(String remoteAddress, int port, RequestPayload messagePayload) {
         String reply = null;
         try (DatagramSocket clientSocket = new DatagramSocket();) {
-            String message = protocol.createMessage(messagePayload);
+            String message = protocol.createRequest(messagePayload);
             DatagramPacket packet = new DatagramPacket(message.getBytes(), message.length(), InetAddress.getByName(remoteAddress), port);
             clientSocket.send(packet);
             DatagramPacket replyPacket = new DatagramPacket(new byte[1024], 1024);
             // Unike the TCP Conection, we receive the message as a single packet
             clientSocket.receive(replyPacket);
             String response = new String(replyPacket.getData());
-            return protocol.parse(response);
+            return protocol.parseResponse(response);
         } catch (Exception e) {
             e.printStackTrace();
         }

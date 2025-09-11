@@ -1,7 +1,8 @@
 package ufrn.pd.server;
 
 import ufrn.pd.service.Service;
-import ufrn.pd.service.user.dtos.RequestPayload;
+import ufrn.pd.service.user.RequestPayload;
+import ufrn.pd.service.user.ResponsePayload;
 import ufrn.pd.utils.protocol.ApplicationProtocol;
 
 import java.io.IOException;
@@ -27,12 +28,12 @@ public class UDPServerSocket implements ServerSocketAdapter {
         try {
             socket.receive(packet);
             // TODO : Receber via codec
-            RequestPayload message = protocol.parse(new String(packet.getData()));
-            Optional<RequestPayload> responsePayload = Optional.ofNullable(service.handle(message));
+            RequestPayload message = protocol.parseRequest(new String(packet.getData()));
+            Optional<ResponsePayload> responsePayload = Optional.ofNullable(service.handle(message));
             if (responsePayload.isEmpty()) {
                 return;
             }
-            String reply = protocol.createMessage(responsePayload.get());
+            String reply = protocol.createResponse(responsePayload.get());
             System.out.println("Recebido: " + reply);
             DatagramPacket replyPacket = new DatagramPacket(reply.getBytes(), reply.length(), packet.getAddress(), packet.getPort());
             socket.send(replyPacket);

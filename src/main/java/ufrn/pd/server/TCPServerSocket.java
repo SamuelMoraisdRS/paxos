@@ -1,7 +1,8 @@
 package ufrn.pd.server;
 
 import ufrn.pd.service.Service;
-import ufrn.pd.service.user.dtos.RequestPayload;
+import ufrn.pd.service.user.RequestPayload;
+import ufrn.pd.service.user.ResponsePayload;
 import ufrn.pd.utils.protocol.ApplicationProtocol;
 
 import java.io.BufferedReader;
@@ -37,17 +38,23 @@ public class TCPServerSocket implements ServerSocketAdapter {
                 String linha = socketReader.readLine();
                 System.out.println("Linha: " + linha);
                 buffer.append(linha);
+                if (linha.equalsIgnoreCase(" ")) {
+                    buffer.append("\n");
+                }
                 buffer.append("\n");
             }
+            buffer.append(socketReader.readLine());
+
+            System.out.println("passou da leitur: ");
 
             String messageString = buffer.toString();
             System.out.println("Recebido: " + messageString);
-            RequestPayload request = protocol.parse(messageString);
-            Optional<RequestPayload> responsePayload = Optional.ofNullable(service.handle(request));
+            RequestPayload request = protocol.parseRequest(messageString);
+            Optional<ResponsePayload> responsePayload = Optional.ofNullable(service.handle(request));
             if (responsePayload.isEmpty()) {
                 return;
             }
-            String response = protocol.createMessage(responsePayload.get());
+            String response = protocol.createResponse(responsePayload.get());
             socketWriter.println(response);
             System.out.println("Enviado: " + response);
 

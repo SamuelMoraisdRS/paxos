@@ -1,13 +1,12 @@
 package ufrn.pd.client;
 
-import ufrn.pd.service.Service;
-import ufrn.pd.service.user.dtos.RequestPayload;
+import ufrn.pd.service.user.RequestPayload;
+import ufrn.pd.service.user.ResponsePayload;
 import ufrn.pd.utils.protocol.ApplicationProtocol;
 
 
 import java.io.*;
 import java.net.Socket;
-import java.util.Optional;
 
 public class TCPClient implements Client, AutoCloseable {
     private int connectionPoolSize = 1000;
@@ -34,21 +33,22 @@ public class TCPClient implements Client, AutoCloseable {
 
     // TODO : Examine the systems fault tolerance
     @Override
-    public RequestPayload sendAndReceive(String remoteAddress, int remotePort, RequestPayload messagePayload) {
+    public ResponsePayload sendAndReceive(String remoteAddress, int remotePort, RequestPayload messagePayload) {
         try (Socket clientSocket = new Socket(remoteAddress, remotePort);) {
             try (PrintWriter out = new PrintWriter(clientSocket.getOutputStream());
                  BufferedReader in = new BufferedReader(new java.io.InputStreamReader(clientSocket.getInputStream()));) {
-                String message = protocol.createMessage(messagePayload);
+                String message = protocol.createRequest(messagePayload);
                 out.print(message);
                 out.flush();
                 // TODO : Encapsulate this on a codec class
                 StringBuilder response_buffer = new StringBuilder();
-                for (int i = 0; i < 6; i++) {
+                for (int i = 0; i < 5   ; i++) {
                     response_buffer.append(in.readLine() + "\n");
                 }
+                response_buffer.append(in.readLine());
 //                Stub
                 String response = response_buffer.toString();
-                return protocol.parse(response);
+                return protocol.parseResponse(response);
             } catch (IOException e) {
                 System.err.println("TCP Client - Error accessing socket streams: " + e.getMessage());
             }
