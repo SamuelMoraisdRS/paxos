@@ -1,14 +1,16 @@
-package ufrn.pd.service.user.dtos;
+package ufrn.pd.service.user;
+
+// Should i put the response message status on the value field of the RequestPayload
+// Pros : No need to modify the interfaces
+// cons : Might be confunsing, delegates parsing to the service layer in a way
 
 import ufrn.pd.client.Client;
-import ufrn.pd.client.TCPClient;
 import ufrn.pd.gateway.NodeAddress;
 import ufrn.pd.gateway.NodeRole;
 import ufrn.pd.server.Server;
-import ufrn.pd.server.TCPServerSocket;
 import ufrn.pd.service.Service;
 import ufrn.pd.service.ServiceNode;
-import ufrn.pd.utils.protocol.ApplicationProtocol;
+import ufrn.pd.service.user.protocol.ResponseStatus;
 
 public class UserService implements Service, ServiceNode {
     private final NodeAddress gatewayAddress;
@@ -26,7 +28,7 @@ public class UserService implements Service, ServiceNode {
     // TODO : WHen the protocol layer is attached to the server, this method will receive request payloads and multiplex
     // them to the appropriate handle function
     @Override
-    public RequestPayload handle(RequestPayload request) {
+    public ResponsePayload handle(RequestPayload request) {
         // TODO : For now, the message structure is "IP\nPORT\nROLE\nOPERATION\nvalue"
         // TODO : Wrap the operations into enums for each service + gateway
         if (request.operation().equalsIgnoreCase("HEARTBEAT")) {
@@ -37,9 +39,9 @@ public class UserService implements Service, ServiceNode {
         return null;
     }
 
-    private RequestPayload handleHeartbeat(RequestPayload request) {
-        RequestPayload heartbeatResponse = new RequestPayload(gatewayAddress, NodeRole.USER, NodeRole.GATEWAY,
-                "END", thisNodeAddress.toString());
+    private ResponsePayload handleHeartbeat(RequestPayload request) {
+        ResponsePayload heartbeatResponse = new ResponsePayload(ResponseStatus.OK,
+                "Heartbeat received", gatewayAddress);
         System.out.println("Retornando HeartBeat");
         return heartbeatResponse;
 
@@ -54,18 +56,8 @@ public class UserService implements Service, ServiceNode {
         int numOfAttempts = 5;
         RequestPayload registerRequestPayload = new RequestPayload(gatewayAddress, NodeRole.USER, NodeRole.GATEWAY, "REGISTER", thisNodeAddress.toString());
         // TODO : Chamada ao servidor
-        RequestPayload response  = client.sendAndReceive(gatewayAddress.ip(), gatewayAddress.port(), registerRequestPayload);
-        System.out.println("Recebida resposta do register" + response.operation());
+        ResponsePayload response  = client.sendAndReceive(gatewayAddress.ip(), gatewayAddress.port(), registerRequestPayload);
+        System.out.println("Recebida resposta do register" + response.status() + response.value());
         return true;
-    }
-    public static void main(String[] args) {
-        NodeAddress gatewayAddress = new NodeAddress("localhost", 3001);
-        NodeAddress thisNodeAddress = new NodeAddress("localhost", 3002);
-        UserService service = new UserService(gatewayAddress, thisNodeAddress, new TCPClient(new ApplicationProtocol()),
-                new Server(new TCPServerSocket(thisNodeAddress.port(), 100), new ApplicationProtocol()));
-        if(!service.raise()) {
-            System.err.println("O no nao foi registrado");
-        }
-        service.run();
     }
 }

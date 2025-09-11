@@ -1,8 +1,8 @@
-package ufrn.pd.service.user.dtos;
+package ufrn.pd.service.user;
 
 import ufrn.pd.gateway.NodeAddress;
 import ufrn.pd.gateway.NodeRole;
-
+// TODO : Define the difference between Request and Response solely on the network layer
 // Record representing a basic request payload
 public record RequestPayload(
         // Node's destinationAddress, used to route the request to the appropriate service. For the replies
