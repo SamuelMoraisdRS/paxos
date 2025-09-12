@@ -1,0 +1,49 @@
+syntax = "proto3";
+package projetogrpc;
+//option java_package = "";
+option java_multiple_files = true;
+
+message NodeAddressGRPC {
+  string ip = 1;
+  int32 port = 2;
+}
+
+// TODO : I dont know if the hearbeat is necessary anymore
+enum NodeRoleGRPC {
+  GATEWAY = 0;
+  USER = 1;
+  BOOKING = 2;
+}
+
+enum ResponseStatus {
+  OK = 0;
+  ERROR = 1;
+  SERVICE_NOT_FOUND = 2;
+  FORBIDDEN = 3;
+}
+
+message Request {
+  NodeAddressGRPC address = 1;
+  NodeRoleGRPC senderRole = 2;
+  NodeRoleGRPC destinationRole = 3;
+  string operation = 4;
+  string value = 5;
+}
+
+message Response {
+  NodeAddressGRPC senderAddress = 1;
+  string value = 2;
+  ResponseStatus status = 3;
+}
+
+service GeneralService {
+  rpc SendRequest(Request) returns (Response);
+}
+
+/*
+Para evitar problemas com o caminho do arquivo,
+use o comando abaixo no terminal do Windows:
+subst X: "C:\Users\nelio\OneDrive\Disciplinas\Aulas Gerais de Programação Distribuída\gRPC\Introducao\grpcprojeto"
+mvn clean
+mvn compile
+*/
