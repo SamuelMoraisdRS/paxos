@@ -13,6 +13,7 @@ enum NodeRoleGRPC {
   GATEWAY = 0;
   USER = 1;
   BOOKING = 2;
+  CLIENT = 3;
 }
 
 enum ResponseStatus {
