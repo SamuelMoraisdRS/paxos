@@ -9,6 +9,8 @@ import ufrn.pd.service.user.protocol.ResponseStatus;
 
 import java.util.*;
 
+// TODO : DUas solucoes: Trazer a validacao para a camada de servico ou acoplar a camada de servico a de protocolo
+// TODO : Vamos fazer a primeira
 public abstract class HTTPProtocol implements ApplicationProtocol {
     private static final Map<ResponseStatus, String> CODES = new HashMap<>();
 
@@ -22,39 +24,63 @@ public abstract class HTTPProtocol implements ApplicationProtocol {
         GET, POST, PUT, DELETE;
     }
 
-//    public Optional<RequestPayload> validateMessage(List<String> msg) {
-//        return Optional.empty();
-//    }
+    @Override
+    public Optional<RequestPayload> validateMessage(String msg) {
+
+        String header = msg.split("\n\n")[0];
+        return Optional.empty();
+    }
 
 
     // TODO : The HTTP resource will be our DestinationRole, and the HTTP method will be our operation
-    private String [] parseHeader(String headerContent) {
+    private String [] parseHeader(String headerContent) throws Exception {
         String [] headerLines = headerContent.split("\n");
         String [] methodLine = headerLines[0].split(" ");
-        // TODO : Be wary of this
         // TODO : Add exception handling
-//        HTTPMethod operation = HTTPMethod.valueOf(methodLine[0]);
-        // Removes the '/' and converts the string to upper case
         String destinationRole = methodLine[1].substring(1).toUpperCase();
-        // TODO : We'll consider that client will be defined on the user agent field
         String senderRole = headerLines[2].split(" ")[1].toUpperCase();
         return new String [] {methodLine[0], destinationRole, senderRole};
     }
 
+    // This method will convert the Method + resource (operation) of the header of an http request into a suitable
+    // operation of the target service
+    public abstract boolean validateOperation(String method, String resource);
+
     @Override
     public RequestPayload parseRequest(String message) {
-        System.out.println("Recebidoservvice: " + message);
+        System.out.println("Recebido Service: " + message);
         // So we can obtain each line from the message (request or response)
-        String[] splitMessage = message.split("\n\n");
-        String header = splitMessage[0];
-        String body = splitMessage[1];
-        String [] headerData = parseHeader(header);
-        NodeRole senderRole = NodeRole.valueOf(headerData[2]);
-        NodeRole destinationRole = NodeRole.valueOf(headerData[1]);
-        return new RequestPayload(null, senderRole, destinationRole, headerData[0], body);
+        String [] splitMessage = message.split("\n\n");
+        String header = null;
+        String body = null;
+        try {
+            header = splitMessage[0];
+            body = splitMessage[1];
+        } catch (ArrayIndexOutOfBoundsException e) {
+            // TODO : Use 400 message
+           return new RequestPayload(null, null, null, "ERROR - ERROR", "Malformed HTTP message");
+        }
+        String [] headerLines = header.split("\n");
+        String [] methodLine = headerLines[0].split(" ");
+        // TODO : Add exception handling
+        // Parses the resource section of the header line to obtai the destination service and the operation to be performed
+        String httpMethod = methodLine[0];
+        String [] resource = methodLine[1].substring(1).split("/");
+        // TODO : Perform validation regarding hte destination address and the destination role. This is validation performed
+        // through all of the nodes, maybe using an interceptor we can give it a single source of truth
+        String destination = resource[0].toUpperCase();
+        String operation = resource[1].toUpperCase();
+        String sender = headerLines[2].split(" ")[1].toUpperCase();
+        NodeRole senderRole = NodeRole.valueOf(sender);
+        NodeRole destinationRole = NodeRole.valueOf(destination);
+        if (!validateOperation(httpMethod, operation)){
+            return new RequestPayload(null, senderRole, destinationRole, "ERROR - NOT FOUND", "Invalid operation");
+        }
+        return new RequestPayload(null, senderRole, destinationRole, operation, body);
     }
 
     public ResponsePayload parseResponse(String message) {
+        System.out.println("Recebido no Service: " + message);
         String [] msg = message.split("\n");
         ResponseStatus status = switch (msg[0].split(" ")[1]) {
             case "200":
@@ -80,7 +106,8 @@ public abstract class HTTPProtocol implements ApplicationProtocol {
         StringBuilder stringBuilder = new StringBuilder();
 
         // Garante que o resource sempre tenha "/" no início e seja minúsculo
-        String destinationRole = String.format("/%s", message.destinationRole().toString().toLowerCase());
+        String destinationRole = String.format("/%s/%s", message.destinationRole().toString().toLowerCase(),
+                message.operation().toLowerCase());
 
         // Primeira linha: METHOD PATH HTTP/1.1
         String requestLine = String.format("%s %s HTTP/1.1",
@@ -92,17 +119,6 @@ public abstract class HTTPProtocol implements ApplicationProtocol {
         stringBuilder.append(String.format("Host: %s\r\n", "STUB"));
 
         stringBuilder.append(String.format("User-Agent: %s\r\n", message.senderRole()));
-
-//        if (message.value() != null && !message.value().isEmpty()) {
-//            stringBuilder.append("Content-Type: application/json\r\n");
-//            // TODO : We're performing decoding based on string lines so this might be useless. Use byte decoding
-//            stringBuilder.append(String.format("Content-Length: %d\r\n", message.value().getBytes().length));
-//        }
-//        stringBuilder.append("\r\n");
-//        if (message.value() != null && !message.value().isEmpty()) {
-//            stringBuilder.append(message.value() + "\r\n");
-//        }
-
         stringBuilder.append("Content-Type: text\r\n\r\n");
         stringBuilder.append(message.value() + "\r\n");
         return stringBuilder.toString();
