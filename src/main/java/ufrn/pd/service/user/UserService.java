@@ -29,20 +29,36 @@ public class UserService implements Service, ServiceNode {
     // them to the appropriate handle function
     @Override
     public ResponsePayload handle(RequestPayload request) {
-        // TODO : For now, the message structure is "IP\nPORT\nROLE\nOPERATION\nvalue"
+        if (request.operation().equalsIgnoreCase("ERROR")) {
+            return new ResponsePayload(ResponseStatus.ERROR, request.value(), thisNodeAddress);
+        }
         // TODO : Wrap the operations into enums for each service + gateway
         if (request.operation().equalsIgnoreCase("HEARTBEAT")) {
             return handleHeartbeat(request);
+        }
+        if (request.operation().equalsIgnoreCase("CREATE")) {
+            return handleCreate(request.value());
+        }
+        if (request.operation().equalsIgnoreCase("RETRIEVE")) {
+//            return handleRetrieve(request.value());
         }
         // STUB
         System.out.printf("Node : %s - Mensagem recebida:%n%s", thisNodeAddress, request);
         return null;
     }
 
+    private ResponsePayload handleCreate(String userValue) {
+        String [] values = userValue.split(":");
+        // The deserialization should be done on the protocol layer
+        String userName = values[0];
+        String score = values[1];
+        return new ResponsePayload(ResponseStatus.OK,
+                String.format("User Created - Name : %s , Score : %s", userName, score), thisNodeAddress);
+    }
     private ResponsePayload handleHeartbeat(RequestPayload request) {
         ResponsePayload heartbeatResponse = new ResponsePayload(ResponseStatus.OK,
                 "Heartbeat received", gatewayAddress);
-        System.out.println("Retornando HeartBeat");
+//        System.out.println("Retornando HeartBeat");
         return heartbeatResponse;
 
     }
