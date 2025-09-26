@@ -10,7 +10,7 @@ import ufrn.pd.gateway.NodeRole;
 import ufrn.pd.server.Server;
 import ufrn.pd.service.Service;
 import ufrn.pd.service.ServiceNode;
-import ufrn.pd.service.user.protocol.ResponseStatus;
+import ufrn.pd.utils.protocol.ResponseStatus;
 
 public class UserService implements Service, ServiceNode {
     private final NodeAddress gatewayAddress;
@@ -39,11 +39,6 @@ public class UserService implements Service, ServiceNode {
         if (request.operation().equalsIgnoreCase("CREATE")) {
             return handleCreate(request.value());
         }
-        if (request.operation().equalsIgnoreCase("RETRIEVE")) {
-//            return handleRetrieve(request.value());
-        }
-        // STUB
-        System.out.printf("Node : %s - Mensagem recebida:%n%s", thisNodeAddress, request);
         return null;
     }
 
@@ -52,8 +47,10 @@ public class UserService implements Service, ServiceNode {
         // The deserialization should be done on the protocol layer
         String userName = values[0];
         String score = values[1];
-        return new ResponsePayload(ResponseStatus.OK,
+        ResponsePayload responsePayload = new ResponsePayload(ResponseStatus.OK,
                 String.format("User Created - Name : %s , Score : %s", userName, score), thisNodeAddress);
+        System.out.println(responsePayload);
+        return responsePayload;
     }
     private ResponsePayload handleHeartbeat(RequestPayload request) {
         ResponsePayload heartbeatResponse = new ResponsePayload(ResponseStatus.OK,
@@ -73,7 +70,7 @@ public class UserService implements Service, ServiceNode {
         RequestPayload registerRequestPayload = new RequestPayload(gatewayAddress, NodeRole.USER, NodeRole.GATEWAY, "REGISTER", thisNodeAddress.toString());
         // TODO : Chamada ao servidor
         ResponsePayload response  = client.sendAndReceive(gatewayAddress.ip(), gatewayAddress.port(), registerRequestPayload);
-        System.out.println("Recebida resposta do register" + response.status() + response.value());
+//        System.out.println("Recebida resposta do register" + response.status() + response.value());
         return true;
     }
 }

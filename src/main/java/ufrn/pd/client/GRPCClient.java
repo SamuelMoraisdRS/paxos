@@ -6,9 +6,8 @@ import ufrn.pd.gateway.GRPCMapper;
 import ufrn.pd.gateway.NodeAddress;
 import ufrn.pd.service.user.RequestPayload;
 import ufrn.pd.service.user.ResponsePayload;
-import ufrn.pd.service.user.protocol.ResponseStatus;
+import ufrn.pd.utils.protocol.ResponseStatus;
 
-import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 

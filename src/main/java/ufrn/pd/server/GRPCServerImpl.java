@@ -1,6 +1,7 @@
 package ufrn.pd.server;
 
 import io.grpc.ServerBuilder;
+import io.grpc.Status;
 import io.grpc.stub.StreamObserver;
 import projetogrpc.NodeAddressGRPC;
 import projetogrpc.Response;
@@ -56,9 +57,15 @@ public class GRPCServerImpl implements Server {
                     requestDestinationRole, request.getOperation(), request.getValue());
             Optional<ResponsePayload> responsePayload = Optional.ofNullable(service.handle(requestPayload));
 
-            if (responsePayload.isEmpty()) {
-                // TODO : Send error message
-            }
+                if (responsePayload.isEmpty()) {
+                    System.err.println("Chegou um erro no grpc");
+                    responseObserver.onError(
+                            Status.UNAVAILABLE // TODO : Use a proper code
+                                    .withDescription("An error has occurred")
+                                    .asRuntimeException()
+                    );
+                    return; // stop execution
+                }
             NodeAddressGRPC responseSenderAddress = NodeAddressGRPC.newBuilder().
                     setIp(responsePayload.get().senderAddress().ip()).
                     setPort(responsePayload.get().senderAddress().port()).build();

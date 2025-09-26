@@ -35,7 +35,7 @@ public class GRPCMapper {
     }
 
     public static ResponsePayload toResponsePayload(projetogrpc.Response responseMessage) {
-        ufrn.pd.service.user.protocol.ResponseStatus responseStatus = ufrn.pd.service.user.protocol.ResponseStatus.valueOf(responseMessage.getStatus().toString());
+        ufrn.pd.utils.protocol.ResponseStatus responseStatus = ufrn.pd.utils.protocol.ResponseStatus.valueOf(responseMessage.getStatus().toString());
         NodeAddress senderAddress = new NodeAddress(responseMessage.getSenderAddress().getIp(), responseMessage.getSenderAddress().getPort());
         return new ResponsePayload(responseStatus, responseMessage.getValue(), senderAddress);
     }
