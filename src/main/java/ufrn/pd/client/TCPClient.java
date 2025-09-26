@@ -41,14 +41,8 @@ public class TCPClient implements Client, AutoCloseable {
                 out.print(message);
                 out.flush();
                 // TODO : Encapsulate this on a codec class
-                StringBuilder response_buffer = new StringBuilder();
-                for (int i = 0; i < 5   ; i++) {
-                    response_buffer.append(in.readLine() + "\n");
-                }
-                response_buffer.append(in.readLine());
-//                Stub
-                String response = response_buffer.toString();
-                return protocol.parseResponse(response);
+                String rawResponse = Codec.decodeHttpMessage(in);
+                return protocol.parseResponse(rawResponse);
             } catch (IOException e) {
                 System.err.println("TCP Client - Error accessing socket streams: " + e.getMessage());
             }

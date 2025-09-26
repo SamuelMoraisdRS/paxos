@@ -28,26 +28,51 @@ public class TCPServerSocket implements ServerSocketAdapter {
         this.connectionPoolSize = connectionPoolSize;
     }
 
+    private String readHttpMessage(BufferedReader socketReader) throws IOException {
+        StringBuilder headerBuilder = new StringBuilder();
+        String line;
+        int contentLength = 0;
+        // Lê os headers até a linha vazia
+        while ((line = socketReader.readLine()) != null && !line.isEmpty()) {
+            headerBuilder.append(line).append("\n");
+            if (line.toLowerCase().startsWith("content-length:")) {
+                contentLength = Integer.parseInt(line.split(":", 2)[1].trim());
+            }
+        }
+        // Linha vazia que separa header e body
+        headerBuilder.append("\n");
+        // Lê o corpo se existir
+        char[] bodyChars = new char[contentLength];
+        int totalRead = 0;
+        while (totalRead < contentLength) {
+            int read = socketReader.read(bodyChars, totalRead, contentLength - totalRead);
+            if (read == -1) break; // fim do stream
+            totalRead += read;
+        }
+        return headerBuilder.toString() + new String(bodyChars, 0, totalRead);
+    }
+
     protected void processRequest(Service service, Socket socket, ApplicationProtocol protocol) {
         try (PrintWriter socketWriter = new PrintWriter(socket.getOutputStream(), true);
              BufferedReader socketReader = new BufferedReader(new java.io.InputStreamReader(socket.getInputStream()))) {
             // TODO : Encapsulate on a codec class
-            StringBuffer buffer = new StringBuffer();
-
-            for (int i = 0 ; i < 5; i++) {
-                String linha = socketReader.readLine();
-                System.out.println("Linha: " + linha);
-                buffer.append(linha);
-                if (linha.equalsIgnoreCase(" ")) {
-                    buffer.append("\n");
-                }
-                buffer.append("\n");
-            }
-            buffer.append(socketReader.readLine());
+            String messageString = readHttpMessage(socketReader);
+//            StringBuffer buffer = new StringBuffer();
+//
+//            for (int i = 0 ; i < 6; i++) {
+//                String linha = socketReader.readLine();
+//                System.out.println("Linha: " + linha);
+//                buffer.append(linha);
+//                if (linha.equalsIgnoreCase(" ")) {
+//                    buffer.append("\n");
+//                }
+//                buffer.append("\n");
+//            }
+//            buffer.append(socketReader.readLine());
 
             System.out.println("passou da leitur: ");
 
-            String messageString = buffer.toString();
+//            String messageString = buffer.toString();
             System.out.println("Recebido: " + messageString);
             RequestPayload request = protocol.parseRequest(messageString);
             Optional<ResponsePayload> responsePayload = Optional.ofNullable(service.handle(request));
@@ -55,8 +80,9 @@ public class TCPServerSocket implements ServerSocketAdapter {
                 return;
             }
             String response = protocol.createResponse(responsePayload.get());
+            System.out.println("Resposta enviada\n" + response);
             socketWriter.println(response);
-            System.out.println("Enviado: " + response);
+//            System.out.println("Enviado: " + response);
 
         } catch (IOException e) {
             System.err.println("TCP Server - Error acessing socket streams: " + e.getMessage());
