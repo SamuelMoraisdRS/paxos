@@ -8,7 +8,7 @@ import ufrn.pd.utils.protocol.ApplicationProtocol;
 import java.io.*;
 import java.net.Socket;
 
-public class TCPClient implements Client, AutoCloseable {
+public class TCPClient implements Client {
     private int connectionPoolSize = 1000;
     private Socket clientSocket;
     private BufferedReader socketReader;
@@ -24,12 +24,6 @@ public class TCPClient implements Client, AutoCloseable {
         this.protocol = protocol;
     }
 
-
-    public void open(String remoteAddress, int remotePort, String message) throws IOException {
-        this.clientSocket = new Socket(remoteAddress, remotePort);
-        this.socketReader = new BufferedReader(new java.io.InputStreamReader(clientSocket.getInputStream()));
-        this.socketWriter = new PrintWriter(clientSocket.getOutputStream(), true);
-    }
 
     // TODO : Examine the systems fault tolerance
     @Override
@@ -51,12 +45,5 @@ public class TCPClient implements Client, AutoCloseable {
             System.err.println("TCP Client - Error binding socket: " + e.getMessage());
         }
         return null;
-    }
-
-    @Override
-    public void close() throws Exception {
-        clientSocket.close();
-        socketReader.close();
-        socketWriter.close();
     }
 }
