@@ -56,7 +56,7 @@ public class GRPCServerImpl implements Server {
             RequestPayload requestPayload = new RequestPayload(requestDestinationAddress, requestSenderRole,
                     requestDestinationRole, request.getOperation(), request.getValue());
             Optional<ResponsePayload> responsePayload = Optional.ofNullable(service.handle(requestPayload));
-
+//            System.out.println("Response Criada: " + responsePayload);
                 if (responsePayload.isEmpty()) {
                     System.err.println("Chegou um erro no grpc");
                     responseObserver.onError(
@@ -71,6 +71,16 @@ public class GRPCServerImpl implements Server {
                     setPort(responsePayload.get().senderAddress().port()).build();
 
             ResponseStatus responseStatus = ResponseStatus.valueOf(responsePayload.get().status().toString());
+
+            // TODO : lancar o codigo de erro correto
+            if (responseStatus != ResponseStatus.OK) {
+                responseObserver.onError(
+                        Status.UNAVAILABLE // TODO : Use a proper code
+                                .withDescription("An error has occurred")
+                                .asRuntimeException()
+                );
+                return;
+            }
 
             var response = projetogrpc.Response.newBuilder().setSenderAddress(responseSenderAddress).
                     setStatus(responseStatus).setValue(responsePayload.get().value()).build();
