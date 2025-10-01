@@ -29,6 +29,7 @@ public class UserService implements Service, ServiceNode {
     // them to the appropriate handle function
     @Override
     public ResponsePayload handle(RequestPayload request) {
+        System.out.println("Operation" + request.operation());
         if (request.operation().equalsIgnoreCase("ERROR")) {
             return new ResponsePayload(ResponseStatus.ERROR, request.value(), thisNodeAddress);
         }
@@ -39,7 +40,14 @@ public class UserService implements Service, ServiceNode {
         if (request.operation().equalsIgnoreCase("CREATE")) {
             return handleCreate(request.value());
         }
-        return null;
+        if (request.operation().equalsIgnoreCase("CALCULATE")) {
+            return handleCalculateScore(request.value());
+        }
+        System.out.println("CHEGOU NO NULL");
+
+        return new ResponsePayload(ResponseStatus.ERROR,
+                "Unknown operation: " + request.operation(), thisNodeAddress);
+//        return null;
     }
 
     private ResponsePayload handleCreate(String userValue) {
@@ -51,6 +59,20 @@ public class UserService implements Service, ServiceNode {
                 String.format("User Created - Name : %s , Score : %s", userName, score), thisNodeAddress);
         System.out.println(responsePayload);
         return responsePayload;
+    }
+
+    private ResponsePayload handleCalculateScore(String calculateScoreValue) {
+        String [] values = calculateScoreValue.split(":");
+        // The deserialization should be done on the protocol layer
+        String name = values[0];
+        Integer val0 = Integer.parseInt(values[1]);
+        Integer val1 = Integer.parseInt(values[2]);
+        Integer val2 = Integer.parseInt(values[3]);
+        ResponsePayload responsePayload = new ResponsePayload(ResponseStatus.OK,
+                String.format("User %s has a score of %d", name, val0 + val1 + val2), thisNodeAddress);
+        System.out.println(responsePayload);
+        return responsePayload;
+
     }
     private ResponsePayload handleHeartbeat(RequestPayload request) {
         ResponsePayload heartbeatResponse = new ResponsePayload(ResponseStatus.OK,
@@ -70,7 +92,7 @@ public class UserService implements Service, ServiceNode {
         RequestPayload registerRequestPayload = new RequestPayload(gatewayAddress, NodeRole.USER, NodeRole.GATEWAY, "REGISTER", thisNodeAddress.toString());
         // TODO : Chamada ao servidor
         ResponsePayload response  = client.sendAndReceive(gatewayAddress.ip(), gatewayAddress.port(), registerRequestPayload);
-//        System.out.println("Recebida resposta do register" + response.status() + response.value());
+        System.out.println("Recebida resposta do register" + response.status() + response.value());
         return true;
     }
 }
