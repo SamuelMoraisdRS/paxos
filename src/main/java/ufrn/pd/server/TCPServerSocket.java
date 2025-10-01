@@ -57,32 +57,18 @@ public class TCPServerSocket implements ServerSocketAdapter {
              BufferedReader socketReader = new BufferedReader(new java.io.InputStreamReader(socket.getInputStream()))) {
             // TODO : Encapsulate on a codec class
             String messageString = readHttpMessage(socketReader);
-//            StringBuffer buffer = new StringBuffer();
-//
-//            for (int i = 0 ; i < 6; i++) {
-//                String linha = socketReader.readLine();
-//                System.out.println("Linha: " + linha);
-//                buffer.append(linha);
-//                if (linha.equalsIgnoreCase(" ")) {
-//                    buffer.append("\n");
-//                }
-//                buffer.append("\n");
-//            }
-//            buffer.append(socketReader.readLine());
-
-            System.out.println("passou da leitur: ");
-
-//            String messageString = buffer.toString();
-            System.out.println("Recebido: " + messageString);
+            if (messageString.contains("calculate")){
+                System.out.println("# Servidor recebeu calculate");
+            }
+//            System.out.println("Recebido: " + messageString);
             RequestPayload request = protocol.parseRequest(messageString);
             Optional<ResponsePayload> responsePayload = Optional.ofNullable(service.handle(request));
             if (responsePayload.isEmpty()) {
                 return;
             }
             String response = protocol.createResponse(responsePayload.get());
-            System.out.println("Resposta enviada\n" + response);
+//            System.out.println("Resposta enviada\n" + response);
             socketWriter.println(response);
-//            System.out.println("Enviado: " + response);
 
         } catch (IOException e) {
             System.err.println("TCP Server - Error acessing socket streams: " + e.getMessage());
@@ -103,8 +89,8 @@ public class TCPServerSocket implements ServerSocketAdapter {
     @Override
     public void open() {
         try {
-            serverSocket = new ServerSocket(port, connectionPoolSize);
-            this.executorService = Executors.newFixedThreadPool(THREAD_POOL_SIZE);
+            serverSocket = new ServerSocket(port);
+            this.executorService = Executors.newCachedThreadPool();
         } catch (IOException e) {
             System.err.println("TCP Server - Error binding server socket : " + e.getMessage());
         }
