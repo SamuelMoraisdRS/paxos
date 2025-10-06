@@ -45,7 +45,9 @@ public class BookingService implements Service, ServiceNode {
         }
         // STUB
         System.out.printf("Node : %s - Mensagem recebida:%n%s", thisNodeAddress, request);
-        return null;
+        return new ResponsePayload(ResponseStatus.ERROR,
+        "Unknown operation: " + request.operation(), thisNodeAddress);
+//        return null;
     }
 
     private ResponsePayload handleCreate(String value) {

@@ -21,8 +21,11 @@ public class APIGateway implements Service {
     // Table of addresses to the nodes managed by this gateway
     private final Map<NodeAddress, NodeRole> addressTable = new ConcurrentHashMap<>();
 
-    private final Map<NodeAddress, NodeStatus> userNodes = new ConcurrentHashMap<>();
+    // ! : High coupling
+    private final ConcurrentHashMap<NodeAddress, NodeStatus> userNodes = new ConcurrentHashMap<>();
     private final Map<NodeAddress, NodeStatus> bookingNodes = new ConcurrentHashMap<>();
+//    private final Set<NodeAddress> livingBookingNodesSet = userNodes.keySet();
+//    private final Set<NodeAddress> livingBookingNodesSet = new ConcurrentLinkedQueue<>();
 
     private final ConcurrentLinkedQueue<NodeAddress> userQueue = new ConcurrentLinkedQueue<>();
     private final ConcurrentLinkedQueue<NodeAddress> bookingQueue = new ConcurrentLinkedQueue<>();
@@ -57,25 +60,25 @@ public class APIGateway implements Service {
         public void run() {
             List<NodeAddress> addresses = new ArrayList<>();
             try (ExecutorService executorService = Executors.newVirtualThreadPerTaskExecutor()) {
-//                System.out.println("Adresses no addressTable : "  + addressTable.keySet());
+                System.out.println("Adresses no addressTable : "  + addressTable.keySet());
+                System.out.println("addresses no userQueue : "  + userQueue);
+                System.out.println("addresses no bookingQueue : "  + bookingQueue);
                 for (NodeAddress address : addressTable.keySet()) {
                     NodeStatus nodeStatus = NodeStatus.ALIVE;
                     NodeAddress responseAddress = null;
                     Future<NodeAddress> future = executorService.submit(() -> sendHeartbeat(address, addressTable.get(address)));
                     try {
-                        Optional<NodeAddress> retorno  = Optional.ofNullable(future.get(400, TimeUnit.MILLISECONDS));
+                        Optional<NodeAddress> retorno  = Optional.ofNullable(future.get(500, TimeUnit.MILLISECONDS));
+//                        System.out.println("Retorno do heartbeat : " + retorno);
                         if (retorno.isEmpty()) {
-//                            System.out.println("Mudou o valor para dead");
                             nodeStatus = NodeStatus.DEAD;
                         }
                     } catch (TimeoutException e) {
                         future.cancel(true);
-//                        addressTable.remove(address);
                         nodeStatus = NodeStatus.DEAD;
                     } catch (Exception e) {
                         e.printStackTrace();
                         nodeStatus = NodeStatus.DEAD;
-//                        addressTable.remove(address);
                     }
                     updateNodeStatus(address, addressTable.get(address), nodeStatus);
                 }
@@ -117,10 +120,15 @@ public class APIGateway implements Service {
         if (nodeMap == null) {
             return;
         }
-        nodeMap.put(nodeAddress, newStatus);
         if (newStatus == NodeStatus.ALIVE) {
-            nodeQueue.add(nodeAddress);
+            Optional<NodeStatus> currentStatus = Optional.ofNullable(nodeMap.get(nodeAddress));
+            if ( currentStatus.isEmpty() || currentStatus.get() == NodeStatus.DEAD || currentStatus.get() == NodeStatus.ALIVE && !nodeQueue.contains(nodeAddress)) {
+                nodeQueue.add(nodeAddress);
+            }
+        } else {
+            nodeQueue.remove(nodeAddress); // O(n)
         }
+        nodeMap.put(nodeAddress, newStatus);
     }
 
     private Optional<NodeAddress> getLivingNode(NodeRole nodeService) {
@@ -149,22 +157,21 @@ public class APIGateway implements Service {
         }
         nodeQueue.add(address.get());
         return address;
-//
-//        return nodeMap.entrySet().stream().
-//                filter(entry -> entry.getValue() == NodeStatus.ALIVE)
-//                .findAny().map(Map.Entry::getKey);
     }
 
     private ResponsePayload handleServiceRequest(RequestPayload payload) {
-        System.out.println("Entrou no handleServiceRequest");
+//        System.out.println("Entrou no handleServiceRequest");
         NodeRole service = payload.destinationRole();
 
         int numOfAttempts = 5;
         Optional<NodeAddress> address = getLivingNode(service);
         if (address.isEmpty()) {
             var erro = new ResponsePayload(ResponseStatus.ERROR, "Internal Error", gatewayAddress);
-            System.out.println("Resposta do serviço : " + erro);
+//            System.out.println("Resposta do serviço : " + erro);
             return new ResponsePayload(ResponseStatus.ERROR, "Internal Error", gatewayAddress);
+        }
+        if (payload.operation().equalsIgnoreCase("CALCULATE")) {
+            System.out.println("# Gateway recebeu calculate");
         }
         NodeAddress chosenNodeAddress = address.get();
         RequestPayload messageToService = new RequestPayload(chosenNodeAddress, service, NodeRole.GATEWAY, payload.operation(), payload.value());
@@ -173,7 +180,7 @@ public class APIGateway implements Service {
         // If the timeout is exceeded, return an error message to the client
         Future<ResponsePayload> future = executorService.submit(() -> client.sendAndReceive(chosenNodeAddress.ip(), chosenNodeAddress.port(), messageToService));
         try {
-            ResponsePayload serviceResponse = future.get(500, TimeUnit.MILLISECONDS);
+            ResponsePayload serviceResponse = future.get(1000, TimeUnit.MILLISECONDS);
             return new ResponsePayload(serviceResponse.status(), serviceResponse.value(), gatewayAddress);
         } catch (Exception e) {
             System.err.println("APIGateway - handleServiceRequest : an exception has occurred : \n" + e.getMessage());
@@ -212,7 +219,7 @@ public class APIGateway implements Service {
                 System.err.println("heartbeatWorker - An exception has occurred: " + e.getMessage());
                 e.printStackTrace();
             }
-        }, 0, 800, TimeUnit.MILLISECONDS);
+        }, 0, 1000, TimeUnit.MILLISECONDS);
     }
 
     public void shutdownHeartbeatWorker() {
