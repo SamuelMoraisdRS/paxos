@@ -1,7 +1,7 @@
 package ufrn.pd.client;
 
-import ufrn.pd.service.user.RequestPayload;
-import ufrn.pd.service.user.ResponsePayload;
+import ufrn.pd.service.bm25service.RequestPayload;
+import ufrn.pd.service.bm25service.ResponsePayload;
 import ufrn.pd.utils.protocol.ApplicationProtocol;
 
 
@@ -27,7 +27,10 @@ public class TCPClient implements Client {
 
     // TODO : Examine the systems fault tolerance
     @Override
-    public ResponsePayload sendAndReceive(String remoteAddress, int remotePort, RequestPayload messagePayload) {
+    public ResponsePayload sendAndReceive(RequestPayload messagePayload) {
+        String remoteAddress = messagePayload.destinationAddress().ip();
+        int remotePort = messagePayload.destinationAddress().port();
+
         try (Socket clientSocket = new Socket(remoteAddress, remotePort);) {
             try (PrintWriter out = new PrintWriter(clientSocket.getOutputStream());
                  BufferedReader in = new BufferedReader(new java.io.InputStreamReader(clientSocket.getInputStream()));) {
