@@ -22,9 +22,17 @@ public class GRPCClient implements Client {
         String remoteAddress = address.ip();
         int port = address.port();
 
-        io.grpc.ManagedChannel channel = channelsPerConnection.get(address);
-
+        ManagedChannel channel = channelsPerConnection.compute(address, (addr, existing) -> {
+            if (existing == null || existing.isShutdown() || existing.isTerminated() ) {
+                System.out.println("Criando novo canal para " + addr);
+                return ManagedChannelBuilder.forAddress(remoteAddress, port)
+                        .usePlaintext()
+                        .build();
+            }
+            return existing;
+        });
         var stub = projetogrpc.GeneralServiceGrpc.newBlockingStub(channel);
+        var request = GRPCMapper.toRequestMessage(message);
 
         try {
             var response = stub.sendRequest(request);

@@ -9,8 +9,8 @@ import projetogrpc.ResponseStatus;
 import ufrn.pd.gateway.NodeAddress;
 import ufrn.pd.gateway.NodeRole;
 import ufrn.pd.service.Service;
-import ufrn.pd.service.user.RequestPayload;
-import ufrn.pd.service.user.ResponsePayload;
+import ufrn.pd.service.bm25service.RequestPayload;
+import ufrn.pd.service.bm25service.ResponsePayload;
 
 import java.io.IOException;
 import java.util.Optional;
@@ -50,22 +50,31 @@ public class GRPCServerImpl implements Server {
 
         @Override
         public void sendRequest(projetogrpc.Request request, StreamObserver<Response> responseObserver) {
+            System.out.println("Recebeu coisa no grpc");
             NodeAddress requestDestinationAddress = new NodeAddress(request.getAddress().getIp(), request.getAddress().getPort());
             NodeRole requestSenderRole = NodeRole.valueOf(request.getSenderRole().toString());
             NodeRole requestDestinationRole = NodeRole.valueOf(request.getDestinationRole().toString());
             RequestPayload requestPayload = new RequestPayload(requestDestinationAddress, requestSenderRole,
                     requestDestinationRole, request.getOperation(), request.getValue());
+            System.out.println("request recebido : " + requestPayload);
             Optional<ResponsePayload> responsePayload = Optional.ofNullable(service.handle(requestPayload));
-//            System.out.println("Response Criada: " + responsePayload);
-                if (responsePayload.isEmpty()) {
-                    System.err.println("Chegou um erro no grpc");
-                    responseObserver.onError(
-                            Status.UNAVAILABLE // TODO : Use a proper code
-                                    .withDescription("An error has occurred")
-                                    .asRuntimeException()
-                    );
-                    return; // stop execution
-                }
+            if (responsePayload.isEmpty()) {
+                System.err.println("Chegou um erro no grpc - resposta nula");
+                ResponsePayload erro = new ResponsePayload(ufrn.pd.utils.protocol.ResponseStatus.ERROR, "Internal error - Null message", new NodeAddress("localhost", port));
+                NodeAddressGRPC responseSenderAddress = NodeAddressGRPC.newBuilder().
+                        setIp("localhost").
+                        setPort(port).build();
+
+                ResponseStatus responseStatus = ResponseStatus.valueOf(ResponseStatus.ERROR.toString());
+                // ! : We'll call the onNext method to send out the error since the jmeter client doesn't reopen
+                // its channels in the case of a shutdown
+                var response = projetogrpc.Response.newBuilder().setSenderAddress(responseSenderAddress).
+                        setStatus(responseStatus).setValue("Internal error - novo erro porraaa").build();
+
+                responseObserver.onNext(response);
+                responseObserver.onCompleted();
+                return;
+            }
             NodeAddressGRPC responseSenderAddress = NodeAddressGRPC.newBuilder().
                     setIp(responsePayload.get().senderAddress().ip()).
                     setPort(responsePayload.get().senderAddress().port()).build();
@@ -74,11 +83,20 @@ public class GRPCServerImpl implements Server {
 
             // TODO : lancar o codigo de erro correto
             if (responseStatus != ResponseStatus.OK) {
-                responseObserver.onError(
-                        Status.UNAVAILABLE // TODO : Use a proper code
-                                .withDescription("An error has occurred")
-                                .asRuntimeException()
-                );
+                ResponsePayload erro = new ResponsePayload(ufrn.pd.utils.protocol.ResponseStatus.ERROR, "Internal Error - Internal Server Error", new NodeAddress("localhost", port));
+                NodeAddressGRPC respo = NodeAddressGRPC.newBuilder().
+                        setIp("localhost").
+                        setPort(port).build();
+
+                ResponseStatus respon = ResponseStatus.valueOf(ResponseStatus.ERROR.toString());
+
+
+                var response = projetogrpc.Response.newBuilder().setSenderAddress(respo).
+                        setStatus(respon).setValue("Internal Error - Internal Server Error").build();
+
+                responseObserver.onNext(response);
+                responseObserver.onCompleted();
+
                 return;
             }
 
