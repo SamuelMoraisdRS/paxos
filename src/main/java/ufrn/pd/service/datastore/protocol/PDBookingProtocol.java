@@ -1,6 +1,6 @@
-package ufrn.pd.service.booking.protocol;
+package ufrn.pd.service.datastore.protocol;
 
-import ufrn.pd.service.user.RequestPayload;
+import ufrn.pd.service.bm25service.RequestPayload;
 import ufrn.pd.utils.protocol.PDProtocol;
 
 import java.util.Optional;

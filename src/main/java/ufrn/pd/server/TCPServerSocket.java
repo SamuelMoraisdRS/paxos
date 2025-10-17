@@ -1,8 +1,8 @@
 package ufrn.pd.server;
 
 import ufrn.pd.service.Service;
-import ufrn.pd.service.user.RequestPayload;
-import ufrn.pd.service.user.ResponsePayload;
+import ufrn.pd.service.bm25service.RequestPayload;
+import ufrn.pd.service.bm25service.ResponsePayload;
 import ufrn.pd.utils.protocol.ApplicationProtocol;
 
 import java.io.BufferedReader;

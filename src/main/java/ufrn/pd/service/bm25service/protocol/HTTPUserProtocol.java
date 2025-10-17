@@ -1,10 +1,9 @@
-package ufrn.pd.service.user.protocol;
+package ufrn.pd.service.bm25service.protocol;
 
-import ufrn.pd.service.user.RequestPayload;
+import ufrn.pd.service.bm25service.RequestPayload;
 import ufrn.pd.utils.protocol.HTTPProtocol;
 
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 

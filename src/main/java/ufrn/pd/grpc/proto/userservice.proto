@@ -8,12 +8,11 @@ message NodeAddressGRPC {
   int32 port = 2;
 }
 
-// TODO : I dont know if the hearbeat is necessary anymore
 enum NodeRoleGRPC {
   GATEWAY = 0;
   USER = 1;
-  BOOKING = 2;
-  CLIENT = 3;
+  DATASTORE = 2;
+  BM25SERVICE = 3;
 }
 
 enum ResponseStatus {
@@ -40,11 +39,3 @@ message Response {
 service GeneralService {
   rpc SendRequest(Request) returns (Response);
 }
-
-/*
-Para evitar problemas com o caminho do arquivo,
-use o comando abaixo no terminal do Windows:
-subst X: "C:\Users\nelio\OneDrive\Disciplinas\Aulas Gerais de Programação Distribuída\gRPC\Introducao\grpcprojeto"
-mvn clean
-mvn compile
-*/

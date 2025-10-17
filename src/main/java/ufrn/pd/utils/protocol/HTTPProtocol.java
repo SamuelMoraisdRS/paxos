@@ -3,8 +3,8 @@ package ufrn.pd.utils.protocol;
 
 import ufrn.pd.gateway.NodeAddress;
 import ufrn.pd.gateway.NodeRole;
-import ufrn.pd.service.user.RequestPayload;
-import ufrn.pd.service.user.ResponsePayload;
+import ufrn.pd.service.bm25service.RequestPayload;
+import ufrn.pd.service.bm25service.ResponsePayload;
 
 import java.util.*;
 
@@ -36,7 +36,7 @@ public abstract class HTTPProtocol implements ApplicationProtocol {
 
     @Override
     public RequestPayload parseRequest(String message) {
-        System.out.println("Recebido Service: " + message);
+//        System.out.println("Recebido Service: " + message);
 
         String[] splitMessage = message.split("\n\n", 2);
         if (splitMessage.length < 1) {
@@ -46,15 +46,12 @@ public abstract class HTTPProtocol implements ApplicationProtocol {
 
         String header = splitMessage[0];
         String body = splitMessage.length > 1 ? splitMessage[1] : "";
-
-//        String[] headerLines = header.split("\r\n");
         String[] headerLines = header.split("\n");
         if (headerLines.length < 1) {
             return new RequestPayload(null, null, null,
                     "ERROR", "Malformed HTTP message (no request line)");
         }
 
-        // Primeira linha → METHOD PATH HTTP/1.1
         String[] methodLine = headerLines[0].split(" ");
         if (methodLine.length < 2) {
             return new RequestPayload(null, null, null,
@@ -71,7 +68,6 @@ public abstract class HTTPProtocol implements ApplicationProtocol {
         String destination = resourceParts[0].toUpperCase();
         String operation = resourceParts[1].toUpperCase();
 
-        // Recupera o sender
         NodeRole senderRole = null;
         for (String line : headerLines) {
             if (line.startsWith("User-Agent:")) {
@@ -102,12 +98,11 @@ public abstract class HTTPProtocol implements ApplicationProtocol {
     }
 
     public ResponsePayload parseResponse(String message) {
-//        System.out.println("Recebido no Service: " + message);
 
         String[] splitMessage = message.split("\n\n", 2);
         String header = splitMessage[0];
         String body = splitMessage.length > 1 ? splitMessage[1] : "";
-
+//        System.out.println("Response no parse response : " + message);
         String[] headerLines = header.split("\r\n");
         if (headerLines.length < 1) {
             throw new IllegalStateException("Malformed HTTP response");
@@ -115,7 +110,7 @@ public abstract class HTTPProtocol implements ApplicationProtocol {
 
         String[] statusLine = headerLines[0].split(" ");
         if (statusLine.length < 2) {
-            throw new IllegalStateException("Malformed status line");
+            throw new IllegalStateException("Malformed status line: " + statusLine);
         }
 
         ResponseStatus status = switch (statusLine[1]) {
@@ -133,8 +128,8 @@ public abstract class HTTPProtocol implements ApplicationProtocol {
             }
         }
 
-        System.out.println("parse_response : Mensagem recebida: " + message);
-        System.out.println("parse_response : Body recebido: " + body);
+//        System.out.println("parse_response : Mensagem recebida: " + message);
+//        System.out.println("parse_response : Body recebido: " + body);
 
         return new ResponsePayload(status, body.trim(), senderAddress);
     }
@@ -143,13 +138,12 @@ public abstract class HTTPProtocol implements ApplicationProtocol {
     public String createRequest(RequestPayload message) {
         StringBuilder sb = new StringBuilder();
 
-        // Exemplo: GET /user/create HTTP/1.1
         String destinationPath = String.format("/%s/%s",
                 message.destinationRole().toString().toLowerCase(),
                 message.operation().toLowerCase());
 
         String requestLine = String.format("%s %s HTTP/1.1",
-                HTTPMethod.POST, destinationPath); // aqui você pode decidir GET/POST dinamicamente
+                HTTPMethod.POST, destinationPath);
         sb.append(requestLine).append("\n");
 
         sb.append("Host: localhost\r\n");

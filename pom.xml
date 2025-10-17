@@ -30,7 +30,11 @@
             <version>4.11</version>
             <scope>test</scope>
         </dependency>
-
+        <dependency>
+            <groupId>com.fasterxml.jackson.core</groupId>
+            <artifactId>jackson-databind</artifactId>
+            <version>2.13.0</version> <!-- or the latest version -->
+        </dependency>
         <!-- https://mvnrepository.com/artifact/io.grpc/grpc-protobuf -->
         <dependency>
             <groupId>io.grpc</groupId>
@@ -135,7 +139,7 @@
                             <configuration>
                                 <archive>
                                     <manifest>
-                                        <mainClass>ufrn.pd.service.user.UserServiceMain</mainClass>
+                                        <mainClass>ufrn.pd.service.bm25service.BM25ServiceMain</mainClass>
                                     </manifest>
                                 </archive>
                                 <descriptorRefs>
@@ -153,13 +157,13 @@
                             <configuration>
                                 <archive>
                                     <manifest>
-                                        <mainClass>ufrn.pd.service.booking.BookingServiceMain</mainClass>
+                                        <mainClass>ufrn.pd.service.datastore.BM25DataStoreMain</mainClass>
                                     </manifest>
                                 </archive>
                                 <descriptorRefs>
                                     <descriptorRef>jar-with-dependencies</descriptorRef>
                                 </descriptorRefs>
-                                <finalName>bookinfService</finalName>
+                                <finalName>DataStoreService</finalName>
                             </configuration>
                         </execution>
                     </executions>
@@ -181,7 +185,8 @@
             <version>3.11.0</version> <configuration>
                 <source>21</source>
                 <target>21</target>
-            </configuration>
+            <compilerArgs>--enable-preview</compilerArgs>
+        </configuration>
         </plugin>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
@@ -221,8 +226,6 @@
                         </configuration>
                     </execution>
 
-                    <!-- EXECUÇÃO 2: User Service (ufrn.pd.service.user.UserServiceMain) -->
-                    <!-- O serviço que estava apresentando o erro gRPC! -->
                     <execution>
                         <id>build-user</id>
                         <phase>package</phase>
@@ -230,12 +233,11 @@
                             <goal>shade</goal>
                         </goals>
                         <configuration>
-                            <finalName>userService</finalName>
+                            <finalName>bm25Service</finalName>
                             <transformers>
-                                <!-- Mescla arquivos de serviço para o gRPC -->
                                 <transformer implementation="org.apache.maven.plugins.shade.resource.ServicesResourceTransformer"/>
                                 <transformer implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
-                                    <mainClass>ufrn.pd.service.user.UserServiceMain</mainClass>
+                                    <mainClass>ufrn.pd.service.bm25service.BM25ServiceMain</mainClass>
                                 </transformer>
                             </transformers>
                             <filters>
@@ -251,20 +253,20 @@
                         </configuration>
                     </execution>
 
-                    <!-- EXECUÇÃO 3: Booking Service (ufrn.pd.service.booking.BookingServiceMain) -->
+                    <!-- EXECUÇÃO 3: Booking Service (ufrn.pd.service.datastore.BM25DataStoreMain) -->
                     <execution>
-                        <id>build-booking</id>
+                        <id>build-datastore</id>
                         <phase>package</phase>
                         <goals>
                             <goal>shade</goal>
                         </goals>
                         <configuration>
-                            <finalName>bookinfService</finalName> <!-- Mantendo o nome original -->
+                            <finalName>datastore</finalName> <!-- Mantendo o nome original -->
                             <transformers>
                                 <!-- Mescla arquivos de serviço para o gRPC -->
                                 <transformer implementation="org.apache.maven.plugins.shade.resource.ServicesResourceTransformer"/>
                                 <transformer implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
-                                    <mainClass>ufrn.pd.service.booking.BookingServiceMain</mainClass>
+                                    <mainClass>ufrn.pd.service.datastore.BM25DataStoreMain</mainClass>
                                 </transformer>
                             </transformers>
                             <filters>

@@ -4,20 +4,16 @@ package ufrn.pd.utils.protocol;
 
 import ufrn.pd.gateway.NodeAddress;
 import ufrn.pd.gateway.NodeRole;
-import ufrn.pd.service.user.RequestPayload;
-import ufrn.pd.service.user.ResponsePayload;
+import ufrn.pd.service.bm25service.RequestPayload;
+import ufrn.pd.service.bm25service.ResponsePayload;
 
 import java.util.List;
 import java.util.Optional;
 
 public abstract class PDProtocol implements ApplicationProtocol {
 
-//    abstract public Optional<RequestPayload> validateMessage(List<String> msg);
-
-//    abstract RequestPayload createErrorMessage(List<String> msg);
     @Override
     public  RequestPayload parseRequest(String message) {
-//        System.out.println("Mensagem recebida : " + message);
         List<String> msg = List.of(message.split("\r\n"));
 //        System.out.println("Mensagem splitada : " + msg);
         // TODO : Split the validation and error payload creation
@@ -33,7 +29,9 @@ public abstract class PDProtocol implements ApplicationProtocol {
         NodeAddress destinationAddress = NodeAddress.fromString(destinationAddressLine);
         NodeRole destinationRole = NodeRole.valueOf(msg.get(3));
         String operation = msg.get(0);
-        return new RequestPayload(destinationAddress, senderRole, destinationRole, operation, msg.get(4));
+        String value = msg.size() == 4 ? "" : msg.get(4);
+        System.out.println("Mensagem que chegou no pd : " + message );
+        return new RequestPayload(destinationAddress, senderRole, destinationRole, operation, value);
     }
 
     // Volta

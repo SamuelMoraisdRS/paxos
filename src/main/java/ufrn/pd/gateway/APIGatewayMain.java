@@ -10,14 +10,23 @@ import ufrn.pd.server.*;
 
 public class APIGatewayMain {
     public static void main(String[] args) {
-        String net = args[0].toLowerCase();
-        String port = args[1].toLowerCase();
+        String net = "";
+        String port = "";
+        if (args.length > 0) {
+            net = args[0].toLowerCase();
+            port = args[1].toLowerCase();
+        } else {
+            net = "udp";
+            port = "3001";
+        }
+
+
         NodeAddress gatewayAddress = new NodeAddress("localhost", Integer.parseInt(port));
         NetworkStack netStack = switch (net) {
             case "tcp" -> new NetworkStack(new TCPClient(new HTTPGatewayProtocol()),
                     new ServerImpl(new TCPServerSocket(gatewayAddress.port(), 1000),new HTTPGatewayProtocol()));
             case "udp" -> new NetworkStack(new UDPClient(new PDGatewayProtocol()),
-                    new ServerImpl(new UDPServerSocket(gatewayAddress.port(), 1000),new PDGatewayProtocol()));
+                    new ServerImpl(new UDPServerSocket(gatewayAddress.port(), 4250),new PDGatewayProtocol()));
             case "grpc" -> new NetworkStack(new GRPCClient(), new GRPCServerImpl(gatewayAddress.port()));
             default -> throw new IllegalArgumentException("Invalid protocol");
         };

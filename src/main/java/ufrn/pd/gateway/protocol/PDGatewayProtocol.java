@@ -1,9 +1,8 @@
 package ufrn.pd.gateway.protocol;
 
-import ufrn.pd.service.user.RequestPayload;
+import ufrn.pd.service.bm25service.RequestPayload;
 import ufrn.pd.utils.protocol.PDProtocol;
 
-import java.util.List;
 import java.util.Optional;
 
 public class PDGatewayProtocol extends PDProtocol {

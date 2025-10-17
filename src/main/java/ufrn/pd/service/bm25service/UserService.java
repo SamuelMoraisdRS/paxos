@@ -1,4 +1,4 @@
-package ufrn.pd.service.user;
+package ufrn.pd.service.bm25service;
 
 // Should i put the response message status on the value field of the RequestPayload
 // Pros : No need to modify the interfaces
@@ -89,9 +89,9 @@ public class UserService implements Service, ServiceNode {
     @Override
     public boolean raise() {
         int numOfAttempts = 5;
-        RequestPayload registerRequestPayload = new RequestPayload(gatewayAddress, NodeRole.USER, NodeRole.GATEWAY, "REGISTER", thisNodeAddress.toString());
+        RequestPayload registerRequestPayload = new RequestPayload(gatewayAddress, NodeRole.BM25SERVICE, NodeRole.GATEWAY, "REGISTER", thisNodeAddress.toString());
         // TODO : Chamada ao servidor
-        ResponsePayload response  = client.sendAndReceive(gatewayAddress.ip(), gatewayAddress.port(), registerRequestPayload);
+        ResponsePayload response  = client.sendAndReceive(registerRequestPayload);
         System.out.println("Recebida resposta do register" + response.status() + response.value());
         return true;
     }

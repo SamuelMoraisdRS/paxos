@@ -1,7 +1,7 @@
 package ufrn.pd.service;
 
-import ufrn.pd.service.user.RequestPayload;
-import ufrn.pd.service.user.ResponsePayload;
+import ufrn.pd.service.bm25service.RequestPayload;
+import ufrn.pd.service.bm25service.ResponsePayload;
 
 /*
 Interface that represent the app's service logic. The handle method will be called the server

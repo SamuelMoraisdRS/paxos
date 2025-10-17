@@ -1,4 +1,4 @@
-package ufrn.pd.service.booking.protocol;
+package ufrn.pd.service.datastore.protocol;
 
 import ufrn.pd.utils.protocol.HTTPProtocol;
 

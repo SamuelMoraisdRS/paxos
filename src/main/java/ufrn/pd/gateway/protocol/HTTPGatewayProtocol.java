@@ -1,6 +1,6 @@
 package ufrn.pd.gateway.protocol;
 
-import ufrn.pd.service.user.RequestPayload;
+import ufrn.pd.service.bm25service.RequestPayload;
 import ufrn.pd.utils.protocol.HTTPProtocol;
 
 import java.util.Optional;

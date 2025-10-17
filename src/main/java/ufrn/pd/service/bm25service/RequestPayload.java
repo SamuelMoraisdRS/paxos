@@ -1,4 +1,4 @@
-package ufrn.pd.service.user;
+package ufrn.pd.service.bm25service;
 
 import ufrn.pd.gateway.NodeAddress;
 import ufrn.pd.gateway.NodeRole;
@@ -8,9 +8,9 @@ public record RequestPayload(
         // Node's destinationAddress, used to route the request to the appropriate service. For the replies
         // to the client node, this field can contain a dummy address
         NodeAddress destinationAddress,
-        // The resource the node is trying to access (HEARTBEAT, USER, REGISTER and BOOKING)
+        // The resource the node is trying to access (HEARTBEAT, BM25SERVICE, REGISTER and DATA_STORE)
         NodeRole senderRole,
-        // The resource the node is trying to access (HEARTBEAT, USER, REGISTER and BOOKING)
+        // The resource the node is trying to access (HEARTBEAT, BM25SERVICE, REGISTER and DATA_STORE)
         NodeRole destinationRole,
         // The operation that should be performed in the resource
         String operation,

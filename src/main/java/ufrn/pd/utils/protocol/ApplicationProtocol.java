@@ -1,9 +1,8 @@
 package ufrn.pd.utils.protocol;
 
-import ufrn.pd.service.user.RequestPayload;
-import ufrn.pd.service.user.ResponsePayload;
+import ufrn.pd.service.bm25service.RequestPayload;
+import ufrn.pd.service.bm25service.ResponsePayload;
 
-import java.util.List;
 import java.util.Optional;
 
 /*

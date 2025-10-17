@@ -3,8 +3,8 @@ package ufrn.pd.gateway;
 import projetogrpc.NodeAddressGRPC;
 import projetogrpc.NodeRoleGRPC;
 import projetogrpc.ResponseStatus;
-import ufrn.pd.service.user.RequestPayload;
-import ufrn.pd.service.user.ResponsePayload;
+import ufrn.pd.service.bm25service.RequestPayload;
+import ufrn.pd.service.bm25service.ResponsePayload;
 
 public class GRPCMapper {
 
