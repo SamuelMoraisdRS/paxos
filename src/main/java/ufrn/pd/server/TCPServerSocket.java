@@ -58,7 +58,7 @@ public class TCPServerSocket implements ServerSocketAdapter {
             // TODO : Encapsulate on a codec class
             String messageString = readHttpMessage(socketReader);
             if (messageString.contains("calculate")){
-                System.out.println("# Servidor recebeu calculate");
+//                System.out.println("# Servidor recebeu calculate");
             }
 //            System.out.println("Recebido: " + messageString);
             RequestPayload request = protocol.parseRequest(messageString);

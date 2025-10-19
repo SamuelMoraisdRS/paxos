@@ -31,7 +31,7 @@ public class BM25Service implements Service, ServiceNode {
     // them to the appropriate handle function
     @Override
     public ResponsePayload handle(RequestPayload request) {
-        System.out.println("Operation" + request.operation());
+//        System.out.println("Operation" + request.operation());
         if (request.operation().equalsIgnoreCase("ERROR")) {
             return new ResponsePayload(ResponseStatus.ERROR, request.value(), thisNodeAddress);
         }
@@ -57,7 +57,7 @@ public class BM25Service implements Service, ServiceNode {
         String score = values[1];
         ResponsePayload responsePayload = new ResponsePayload(ResponseStatus.OK,
                 String.format("User Created - Name : %s , Score : %s", userName, score), thisNodeAddress);
-        System.out.println(responsePayload);
+//        System.out.println(responsePayload);
         return responsePayload;
     }
 
@@ -163,6 +163,7 @@ public class BM25Service implements Service, ServiceNode {
                 // TODO : Isso deveria estar na camada de protocolo
                 "REGISTER", thisNodeAddress.toString());
         ResponsePayload response = client.sendAndReceive(registerRequestPayload);
+        System.out.println("REGISTRADO");
         return true;
     }
 }

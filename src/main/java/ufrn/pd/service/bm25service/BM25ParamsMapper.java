@@ -54,7 +54,7 @@ public class BM25ParamsMapper {
         try {
             docFreq = mapper.readValue(parts[1], new TypeReference<>() {});
         } catch (JsonProcessingException e) {
-            System.out.println("BM25ParamsMapper - payload : " + payload);
+//            System.out.println("BM25ParamsMapper - payload : " + payload);
             throw new RuntimeException(e);
         }
         double k1 = Double.parseDouble(parts[2]);

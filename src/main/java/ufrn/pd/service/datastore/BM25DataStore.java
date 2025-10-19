@@ -57,7 +57,7 @@ public class BM25DataStore implements Service, ServiceNode {
     private void loadDocuments() {
         int totalLength = 0;
 
-        System.out.println("Leitura Completa.");
+//        System.out.println("Leitura Completa.");
 
         for (String document : corpus) {
             String[] terms = document.split("\\s+");
@@ -80,7 +80,7 @@ public class BM25DataStore implements Service, ServiceNode {
             avgDocLength = (double) totalLength / corpus.size();
         }
 
-        System.out.println("Processamento do corpus finalizada.");
+//        System.out.println("Processamento do corpus finalizada.");
     }
 
     public BM25DataStore(Server server, Client client, NodeAddress gatewayAddress, NodeAddress thsiNodeAddress) {
@@ -100,14 +100,14 @@ public class BM25DataStore implements Service, ServiceNode {
         }
         // TODO : Wrap the operations into enums for each service + gateway
         if (request.operation().equalsIgnoreCase("HEARTBEAT")) {
-            System.out.println("Recebeu um HEARTBEAT");
+//            System.out.println("Recebeu um HEARTBEAT");
             return handleHeartbeat(request);
         }
         if (request.operation().equalsIgnoreCase("PARAMETERS")) {
-            System.out.println("Recebeu um PARAMETERS");
+//            System.out.println("Recebeu um PARAMETERS");
             return handleParameters(request.value());
         }
-        System.out.printf("Node : %s - Mensagem recebida:%n%s", thisNodeAddress, request);
+//        System.out.printf("Node : %s - Mensagem recebida:%n%s", thisNodeAddress, request);
         return new ResponsePayload(ResponseStatus.ERROR,
                 "Unknown operation: " + request.operation(), thisNodeAddress);
     }
@@ -130,6 +130,7 @@ public class BM25DataStore implements Service, ServiceNode {
                 // TODO : Move to  protocol layer
                 "REGISTER", thisNodeAddress.toString());
         ResponsePayload response = client.sendAndReceive(registerRequestPayload);
+        System.out.println("REGISTRADO");
         return true;
     }
 

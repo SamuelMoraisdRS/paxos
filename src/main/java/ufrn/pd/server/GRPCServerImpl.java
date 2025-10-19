@@ -50,13 +50,13 @@ public class GRPCServerImpl implements Server {
 
         @Override
         public void sendRequest(projetogrpc.Request request, StreamObserver<Response> responseObserver) {
-            System.out.println("Recebeu coisa no grpc");
+//            System.out.println("Recebeu coisa no grpc");
             NodeAddress requestDestinationAddress = new NodeAddress(request.getAddress().getIp(), request.getAddress().getPort());
             NodeRole requestSenderRole = NodeRole.valueOf(request.getSenderRole().toString());
             NodeRole requestDestinationRole = NodeRole.valueOf(request.getDestinationRole().toString());
             RequestPayload requestPayload = new RequestPayload(requestDestinationAddress, requestSenderRole,
                     requestDestinationRole, request.getOperation(), request.getValue());
-            System.out.println("request recebido : " + requestPayload);
+//            System.out.println("request recebido : " + requestPayload);
             Optional<ResponsePayload> responsePayload = Optional.ofNullable(service.handle(requestPayload));
             if (responsePayload.isEmpty()) {
                 System.err.println("Chegou um erro no grpc - resposta nula");
@@ -92,7 +92,7 @@ public class GRPCServerImpl implements Server {
 
 
                 var response = projetogrpc.Response.newBuilder().setSenderAddress(respo).
-                        setStatus(respon).setValue("Internal Error - Internal Server Error").build();
+                        setStatus(respon).setValue(responsePayload.get().value()).build();
 
                 responseObserver.onNext(response);
                 responseObserver.onCompleted();

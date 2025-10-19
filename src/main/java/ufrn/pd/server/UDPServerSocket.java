@@ -56,7 +56,7 @@ public class UDPServerSocket implements ServerSocketAdapter {
             this.executorService.execute(() -> processRequest(service, protocol, socket));
 
         } catch (Exception e) {
-            System.out.println("address" + this.port);
+            System.err.println("address" + this.port);
             System.err.println(" UDP Server - Error stablishing client connection: " + e.getMessage());
         }
 

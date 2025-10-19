@@ -24,7 +24,7 @@ public class GRPCClient implements Client {
 
         ManagedChannel channel = channelsPerConnection.compute(address, (addr, existing) -> {
             if (existing == null || existing.isShutdown() || existing.isTerminated() ) {
-                System.out.println("Criando novo canal para " + addr);
+//                System.out.println("Criando novo canal para " + addr);
                 return ManagedChannelBuilder.forAddress(remoteAddress, port)
                         .usePlaintext()
                         .build();
