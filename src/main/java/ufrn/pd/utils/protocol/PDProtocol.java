@@ -30,7 +30,7 @@ public abstract class PDProtocol implements ApplicationProtocol {
         NodeRole destinationRole = NodeRole.valueOf(msg.get(3));
         String operation = msg.get(0);
         String value = msg.size() == 4 ? "" : msg.get(4);
-        System.out.println("Mensagem que chegou no pd : " + message );
+//        System.out.println("Mensagem que chegou no pd : " + message );
         return new RequestPayload(destinationAddress, senderRole, destinationRole, operation, value);
     }
 
